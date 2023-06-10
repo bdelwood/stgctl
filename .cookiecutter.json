@@ -1,0 +1,14 @@
+{
+  "_output_dir": "/home/brodi/Documents/git/github/stgctl",
+  "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
+  "author": "Brodi Elwood",
+  "copyright_year": "2023",
+  "development_status": "Development Status :: 4 - Beta",
+  "email": "bdelwood@fas.harvard.edu",
+  "friendly_name": "stage-control",
+  "github_user": "bdelwood",
+  "license": "MIT",
+  "package_name": "stgctl",
+  "project_name": "stgctl",
+  "version": "0.0.0"
+}
