@@ -6,18 +6,27 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
   - package-ecosystem: pip
     reviewers:
       - bdelwood
     directory: "/.github/workflows"
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
   - package-ecosystem: pip
     reviewers:
       - bdelwood
     directory: "/docs"
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
   - package-ecosystem: pip
     directory: "/"
     reviewers:
@@ -27,3 +36,6 @@ updates:
     versioning-strategy: lockfile-only
     allow:
       - dependency-type: "all"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
