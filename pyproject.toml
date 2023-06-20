@@ -20,6 +20,9 @@ python = "^3.10"
 click = ">=8.0.1"
 ruff = "^0.0.272"
 darglint2 = "^1.8.2"
+pyserial = "^3.5"
+loguru = "^0.7.0"
+pydantic = {extras = ["dotenv"], version = "^1.10.9"}
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"

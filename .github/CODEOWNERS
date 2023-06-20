@@ -1,0 +1,4 @@
+# CODEOWNERS file for bdelwood repositories
+
+# Set default owners for all files
+* @bdelwood

@@ -1,18 +1,17 @@
 # stage-control
 
-[![PyPI](https://img.shields.io/pypi/v/stgctl.svg)][pypi status]
-[![Status](https://img.shields.io/pypi/status/stgctl.svg)][pypi status]
+[![PyPI](https://img.shields.io/github/v/tag/bdelwood/stgctl?sort=semver)][gh_tag]
 [![Python Version](https://img.shields.io/pypi/pyversions/stgctl)][pypi status]
-[![License](https://img.shields.io/pypi/l/stgctl)][license]
+[![License](https://img.shields.io/github/license/bdelwood/stgctl)][license]
 
 [![Read the documentation at https://stgctl.readthedocs.io/](https://img.shields.io/readthedocs/stgctl/latest.svg?label=Read%20the%20Docs)][read the docs]
-[![Tests](https://github.com/bdelwood/stgctl/workflows/Tests/badge.svg)][tests]
 [![Codecov](https://codecov.io/gh/bdelwood/stgctl/branch/main/graph/badge.svg)][codecov]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 
 [pypi status]: https://pypi.org/project/stgctl/
+[gh_tag]: https://github.com/bdelwood/stgctl/tags
 [read the docs]: https://stgctl.readthedocs.io/
 [tests]: https://github.com/bdelwood/stgctl/actions?workflow=Tests
 [codecov]: https://app.codecov.io/gh/bdelwood/stgctl

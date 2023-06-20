@@ -1,19 +1,27 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
+    reviewers:
+      - bdelwood
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
   - package-ecosystem: pip
+    reviewers:
+      - bdelwood
     directory: "/.github/workflows"
     schedule:
-      interval: weekly
+      interval: monthly
   - package-ecosystem: pip
+    reviewers:
+      - bdelwood
     directory: "/docs"
     schedule:
       interval: monthly
   - package-ecosystem: pip
     directory: "/"
+    reviewers:
+      - bdelwood
     schedule:
       interval: monthly
     versioning-strategy: lockfile-only
