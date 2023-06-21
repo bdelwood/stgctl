@@ -4,6 +4,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum
+from pprint import pformat
 from typing import Any
 from typing import Self
 from typing import TypeVar
@@ -12,25 +13,10 @@ from warnings import warn
 import serial
 from loguru import logger
 from stgctl.core.settings import settings
+from stgctl.lib.exceptions import InvalidVMXCommandError
+from stgctl.lib.exceptions import UnsupportedVmxCommandError
+from stgctl.lib.exceptions import VmxNotReadyError
 from stgctl.util.ports import grep_serial_ports
-
-
-class UnsupportedVmxCommandError(Exception):
-    """Raised when the attempted command is not supported by the Velmex controller."""
-
-    pass
-
-
-class VmxNotReadyError(Exception):
-    """Raised when the VMX indicates it is not ready."""
-
-    pass
-
-
-class InvalidVMXCommandError(Exception):
-    """Raised when the VMX indicates it is not ready."""
-
-    pass
 
 
 class Motor(IntEnum):
@@ -42,36 +28,50 @@ class Motor(IntEnum):
 T = TypeVar("T", bound="VMX")
 
 
-class AllowNow:
-    def __init__(self, func: Callable[..., T]) -> None:
-        self.func = func
+class MandateImmediate:
+    def __init__(self, immediate: bool = True) -> None:
+        self.immediate = immediate
 
-    def __get__(self, instance: T, owner: type[T]) -> Callable:
-        @functools.wraps(self.func)
-        def wrapper(now: bool = False, *args: Any, **kwargs: Any) -> T | None:
-            if now:
+    def __call__(self, func: Callable[..., T]) -> Callable[..., T]:
+        if self.immediate:
+
+            @functools.wraps(func)
+            def wrapper(instance, *args: Any, **kwargs: Any) -> T | None:
                 instance._reset()
-                instance._read()
-                set_method = getattr(instance, self.func.__name__)
-                set_method(*args, **kwargs)
+                instance._serial.reset_input_buffer()
+                result = func(instance, *args, **kwargs)
                 instance.send()
+                return result
 
-                return None
-            return self.func(instance, *args, **kwargs)
+            return wrapper
+        else:
 
-        return wrapper
+            @functools.wraps(func)
+            def wrapper(
+                instance, now: bool = False, *args: Any, **kwargs: Any
+            ) -> T | None:
+                if now:
+                    instance._reset()
+                    instance._serial.reset_input_buffer()
+                    func(instance, *args, **kwargs)
+                    instance.send()
+                    return None
+                else:
+                    return func(instance, *args, **kwargs)
+
+            return wrapper
 
 
 class Command:
-    def __init__(self, param_name: str) -> None:
-        self.param_name = param_name
+    def __init__(self, cmd_type: str) -> None:
+        self.cmd_type = cmd_type
 
     def __call__(self, func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
         def wrapper(instance: Any, *args: Any, **kwargs: Any) -> T:
-            cmds = getattr(VMX, self.param_name)
+            allowed_cmds = getattr(VMX, self.cmd_type)
             cmd = args[0]
-            if cmd in cmds:
+            if cmd in allowed_cmds:
                 instance._cmd.append(cmd)
             else:
                 raise UnsupportedVmxCommandError(f"{cmd} is not a supported command.")
@@ -80,7 +80,6 @@ class Command:
         return wrapper
 
 
-# @dataclass
 class SerialCommand(list):
     """Container for Velmex."""
 
@@ -143,14 +142,28 @@ class VMX:
     SET_PAUSE: str = "P{x}"
 
     # Operation commands
-    OP_CMDS: tuple[str, ...] = ("Q", "R", "N", "K", "C", "D", "E", "F", "rsm", "res")
+    OP_CMDS: tuple[str, ...] = (
+        "Q",
+        "R",
+        "N",
+        "K",
+        "C",
+        "D",
+        "E",
+        "F",
+        "rsm",
+        "res",
+        "!",
+    )
 
     # Status request commands
-    STATUS_CMDS: tuple[str, ...] = ("V", "X", "Y", "M", "lst")
+    STATUS_CMDS: tuple[str, ...] = ("V", "X", "Y", "M", "lst", "x", "y")
     GET_MOTOR: str = "getM{m}M"
 
+    PROG_COMPLETE: str = "^"
+
     def __init__(self, port=None) -> None:
-        logger.info(f"{settings}")
+        logger.debug(f"Using settings:\n{pformat(settings.dict())}")
         if not port:
             matched_serial_ports = grep_serial_ports(settings.VMX_DEVICE_REGEX)
             logger.debug(f"Matched serial ports: {matched_serial_ports}")
@@ -172,10 +185,19 @@ class VMX:
         self._cmd = SerialCommand()
         self.startup()
 
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self) -> None:
+        self.close()
+
+    def __del__(self) -> None:
+        self.close()
+
     def startup(self) -> None:
-        self.reset(now=True)
+        self.reset()
         time.sleep(1)
-        self.echo(now=True, echo_state=True)
+        self.echo(echo_state=True)
         wait_time = 0.1
         timeout = 5
         start_time = time.time()
@@ -184,23 +206,41 @@ class VMX:
             if abs(start_time - time.time()) > timeout:
                 raise VmxNotReadyError("Connecting to the VMX has timed out.")
 
+    def close(self) -> None:
+        self.kill()
+        self._serial.close()
+
     def _write(self, cmd: SerialCommand) -> None:
         logger.debug(f"Writing command: {cmd}")
         self._serial.write(cmd.encode())
 
-    def _read(self) -> bytes:
+    def _readall(self) -> bytes:
         time.sleep(0.1)
         readout = self._serial.readall()
-        logger.debug(f"Serial has read out: {readout}")
+        logger.debug(f"Serial readall: {readout}")
+        return readout
+
+    def _read(self) -> bytes:
+        readout = self._serial.readall()
         return readout
 
     def _reset(self) -> None:
         self._cmd = SerialCommand()
 
-    def send(self) -> None:
-        """Write to VMX serial port.
+    def wait_for_complete(self, timeout: float = 60.0) -> None:
+        start = time.time()
+        self._serial.reset_input_buffer()
+        while abs(time.time() - start) < timeout:
+            data = self._serial.read(1)
+            if data.decode() == "^":
+                return
+        raise TimeoutError("Waiting for program to complete timed out.")
 
-        Note that sending commands just appends it to the current "program." The VMX chains calls itself unless cleared.
+    def send(self) -> None:
+        """Send current command string to VMX serial port.
+
+        Note that sending commands just appends it to the current "program."
+        The VMX chains calls itself unless cleared.
         Programs won't run until R is sent.
         """
         self._write(self._cmd)
@@ -212,23 +252,31 @@ class VMX:
     def op_cmd(self, cmd: str) -> Self:
         return self
 
-    @AllowNow
-    def reset(self) -> Self:
-        return self.op_cmd("res")
+    @MandateImmediate()
+    def reset(self) -> None:
+        self.op_cmd("res")
 
-    # C immediately clears the command, and R immediately runs whatever is currently in the program.
-    # Anything after a first R will be ignored.
-    @AllowNow
+    @MandateImmediate(False)
     def run(self) -> Self:
+        """Runs whatever is currently in the program.
+
+        Raises:
+            InvalidVMXCommandError:  Anything after a first R will be ignored.
+
+        Returns:
+            Self: VMX instance
+        """
         if "R" in self._cmd:
             raise InvalidVMXCommandError("Everything after the first R is ignored.")
         return self.op_cmd("R")
 
-    @AllowNow
+    @MandateImmediate(False)
     def clear(self) -> Self:
-        """Note that inserting clear into the middle of a command has no real effect.
+        """C immediately clears the program in VMX memory.
 
-        Clear does not stop the current program. It only clear it in memory.
+        Note that inserting clear into the middle of a command has no real effect.
+
+        Clear does not stop the current program. It only clears it in VMX memory.
         You need to use kill or decelerate to immediately stop current program.
 
         Returns:
@@ -237,30 +285,45 @@ class VMX:
         return self.op_cmd("C")
 
     # Only the first `N` is run in a program (others are effectively ignored.)
-    @AllowNow
+    @MandateImmediate(False)
     def origin(self) -> Self:
+        """Set the current position/index as the zero point for all motors.
+
+        Raises:
+            InvalidVMXCommandError: Only the first `N` is run in a program (others are effectively ignored.)
+
+        Returns:
+            Self: VMX instance
+        """
+        if "N" in self._cmd:
+            raise InvalidVMXCommandError("Everything after the first N is ignored.")
         return self.op_cmd("N")
 
-    @AllowNow
-    def echo(self, echo_state: bool = False) -> Self:
+    @MandateImmediate()
+    def echo(self, echo_state: bool = False) -> None:
         if echo_state:
             self.op_cmd("F")
         else:
             self.op_cmd("E")
-        return self
 
-    # `D` or `K` are ignored in the middle of a command.
+    # `D`, `K`, or `!` are ignored in the middle of a command.
     # Sending `D` or `K` to an active program decelerates/kills the program immediately.
     # These methods thus only support the "now" mode and cannot be chained.
-    def kill(self) -> Self:
-        self._reset()
-        self._read()
-        self.op_cmd("K").send()
+    @MandateImmediate()
+    def kill(self) -> None:
+        self.op_cmd("K")
 
-    def decel(self) -> Self:
-        self._reset()
-        self._read()
-        self.op_cmd("D").send()
+    @MandateImmediate()
+    def decel(self) -> None:
+        self.op_cmd("D")
+
+    @MandateImmediate()
+    def record_posn(self) -> None:
+        """Records current positions in FIFO buffer.
+
+        Only works when the VMX is actively indexing.
+        """
+        self.op_cmd("!")
 
     # Start of status commands
 
@@ -268,40 +331,45 @@ class VMX:
     def status_cmd(self, status_cmd: str) -> Self:
         return self
 
-    @AllowNow
-    def verify(self) -> Self:
-        return self.status_cmd("V")
+    @MandateImmediate()
+    def verify(self) -> bytes:
+        self.status_cmd("V")
+        return self._readall()
 
     def isready(self) -> bool:
-        self.verify(now=True)
-        state = self._read()
+        state = self.verify()
         logger.debug(f"isready state is {state}")
         if state == b"R":
             return True
         return False
 
-    @AllowNow
-    def posn(self, axis: Motor = Motor.X) -> Self:
-        return self.status_cmd(axis.name)
+    @MandateImmediate()
+    def posn(self, axis: Motor = Motor.X, recorded=False) -> bytes:
+        cmd = axis.name.lower() if recorded else axis.name
+        if recorded:
+            cmd = axis.name.lower()
+        self.status_cmd(cmd)
+        return self._readall()
 
     # `lst` will list out current program.
     #  Anything outside of motor commands is not stored in a program.
-    def lst(self) -> str:
-        self.status_cmd("lst").send()
-        return self._read()
+    @MandateImmediate()
+    def lst(self) -> bytes:
+        self.status_cmd("lst")
+        return self._readall()
 
     # Start of motor commands
 
-    @AllowNow
-    def move(self, steps: int, motor: Motor = Motor.X, relative: bool = True) -> Self:
+    @MandateImmediate(False)
+    def move(self, idx: int, motor: Motor = Motor.X, relative: bool = True) -> Self:
         if relative:
-            self._cmd.append(VMX.IDX_INCR.format(m=motor, x=steps))
+            self._cmd.append(VMX.IDX_INCR.format(m=motor, x=idx))
         else:
-            self._cmd.append(VMX.IDX_ABS.format(m=motor, x=steps))
+            self._cmd.append(VMX.IDX_ABS.format(m=motor, x=idx))
 
         return self
 
-    @AllowNow
+    @MandateImmediate(False)
     def to_limit(self, motor: Motor = Motor.X, pos: bool = True) -> Self:
         if pos:
             self._cmd.append(VMX.IDX_POS_LIMIT.format(m=motor))
@@ -309,21 +377,22 @@ class VMX:
             self._cmd.append(VMX.IDX_NEG_LIMIT.format(m=motor))
         return self
 
+    @MandateImmediate(False)
     def to_zero(self, motor: Motor = Motor.X) -> Self:
         self._cmd.append(VMX.IDX_ABS_ZERO.format(m=motor))
         return self
 
-    @AllowNow
+    @MandateImmediate(False)
     def zero_posn(self, motor: Motor = Motor.X) -> Self:
         self._cmd.append(VMX.SET_ABS_ZERO.format(m=motor))
         return self
 
-    @AllowNow
+    @MandateImmediate(False)
     def speed(self, speed: int, motor: Motor = Motor.X) -> Self:
         self._cmd.append(VMX.SET_SPEED.format(m=motor, x=speed))
         return self
 
-    @AllowNow
+    @MandateImmediate(False)
     def pause(self, time: float) -> Self:
         time = round(time, 2) * 10
         self._cmd.append(VMX.SET_PAUSE.format(x=time))
@@ -340,23 +409,3 @@ class VMX:
                 "Value assigned to command_que must be of type SerialCommand."
             )
         self._cmd = value
-
-
-# Notes on how old code behaved:
-# data_taking_wait_time is at every step
-# However, "if already there" (eg at start or turnaround), only data_taking_wait_time is waited, step_wait_time is skipped!
-class XYStages:
-    def __init__(self):
-        self.VMX = VMX()
-
-    def set_trajectory(self, relative=False):
-        self._trajectory = get_trajectory()
-
-    @property
-    def trajectory(self):
-        return self._trajectory
-
-
-def get_trajectory():
-    """Get array of coordinates giving trajectory."""
-    raise NotImplementedError

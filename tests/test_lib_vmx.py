@@ -49,27 +49,42 @@ def test_isready_when_not_ready(vmx, mock_serial):
 
 
 # Define a list of method names and their expected arguments
-method_args = [
+method_args_allow_chain = [
     ("run", b"R"),
     ("clear", b"C"),
     ("origin", b"N"),
+]
+
+method_args_immediate = [
     ("verify", b"V"),
+    ("kill", b"K"),
+    ("decel", b"D"),
+    ("reset", b"res"),
+    ("record_posn", b"!"),
+    ("posn", b"X"),
+    ("posn", b"Y"),
+    ("lst", b"lst"),
 ]
 
 
-@pytest.mark.parametrize("method_name, expected_args", method_args)
+@pytest.mark.parametrize(
+    "method_name, expected_args", method_args_allow_chain + method_args_immediate
+)
 def test_vmx_methods(vmx, mock_serial, method_name, expected_args):
     # Retrieve the method dynamically based on the name
     method = getattr(vmx, method_name)
 
     # Call method with now and perform assertions
     method()
+    if method_name in method_args_allow_chain:
+        assert str(vmx.command_que) == expected_args.decode()
+        mock_serial.write.assert_not_called()
+    if method_name in method_args_immediate:
+        mock_serial.write.assert_called_once()
+        assert mock_serial.write.return_value == expected_args
 
-    assert str(vmx.command_que) == expected_args.decode()
-    mock_serial.write.assert_not_called()
 
-
-@pytest.mark.parametrize("method_name, expected_args", method_args)
+@pytest.mark.parametrize("method_name, expected_args", method_args_allow_chain)
 def test_vmx_methods_with_now(vmx, mock_serial, method_name, expected_args):
     # Retrieve the method dynamically based on the name
     method = getattr(vmx, method_name)
@@ -81,7 +96,7 @@ def test_vmx_methods_with_now(vmx, mock_serial, method_name, expected_args):
 
 def test_echo_with_echo_state_true(vmx, mock_serial):
     # Call the echo method with echo_state=True
-    vmx.echo(now=True, echo_state=True)
+    vmx.echo(echo_state=True)
 
     # Verify that the write method of the mock serial connection is called with the expected command
     mock_serial.write.assert_called_once_with(b"F")
@@ -89,7 +104,7 @@ def test_echo_with_echo_state_true(vmx, mock_serial):
 
 def test_echo_with_echo_state_false(vmx, mock_serial):
     # Call the echo method with echo_state=False
-    vmx.echo(now=True, echo_state=False)
+    vmx.echo(echo_state=False)
 
     # Verify that the write method of the mock serial connection is called with the expected command
     mock_serial.write.assert_called_once_with(b"E")
@@ -97,7 +112,7 @@ def test_echo_with_echo_state_false(vmx, mock_serial):
 
 def test_move_relative(vmx, mock_serial):
     # Call the move method with relative=True
-    vmx.move(now=True, steps=100, motor=1, relative=True)
+    vmx.move(now=True, idx=100, motor=1, relative=True)
 
     # Verify that the write method of the mock serial connection is called with the expected command
     mock_serial.write.assert_called_once_with(b"I1M100")
@@ -105,7 +120,7 @@ def test_move_relative(vmx, mock_serial):
 
 def test_move_absolute(vmx, mock_serial):
     # Call the move method with relative=False
-    vmx.move(now=True, steps=100, motor=1, relative=False)
+    vmx.move(now=True, idx=100, motor=1, relative=False)
 
     # Verify that the write method of the mock serial connection is called with the expected command
     mock_serial.write.assert_called_once_with(b"IA1M100")
