@@ -1,11 +1,18 @@
+"""Global settings for stgctl, including logs."""
+
 from datetime import datetime
+from pathlib import Path
 from re import Pattern
 
 from loguru import logger
 from pydantic import BaseSettings
 
 
-logger.add(f'stgctl_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log')
+log_path = Path("./logs") / Path(
+    f'stgctl_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
+)
+
+logger.add(log_path.absolute())
 
 
 class Settings(BaseSettings):

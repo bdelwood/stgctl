@@ -1,3 +1,7 @@
+"""Command line interface for stgctl."""
+
+from typing import Annotated
+
 import typer
 from loguru import logger
 
@@ -9,9 +13,14 @@ cli = typer.Typer()
 
 @cli.command()
 def stages(
-    raster: bool | None = False,
-    home: bool | None = False,
+    raster: Annotated[
+        bool, typer.Option("--raster", help="Run stage raster sequence.")
+    ] = False,
+    home: Annotated[
+        bool, typer.Option("--home", help="Run stage homing sequence.")
+    ] = False,
 ):
+    """Subcommand for controlling XY stage."""
     logger.info("Initializing stages.")
 
     logger.debug(f"{raster and home}")
@@ -32,4 +41,5 @@ def stages(
 
 @cli.command()
 def vmx():
+    """Subcommand for controlling VMX directly."""
     raise NotImplementedError("VMX command line interface not implemented yet.")
