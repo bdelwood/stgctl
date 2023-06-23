@@ -1,5 +1,3 @@
-from typing import Optional
-
 import typer
 from loguru import logger
 
