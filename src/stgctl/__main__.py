@@ -1,12 +1,10 @@
-"""Command-line interface."""
-import click
+"""Main."""
+from stgctl.cli import cli
 
 
-@click.command()
-@click.version_option()
-def main() -> None:
-    """stage-control."""
+def main():
+    cli()
 
 
 if __name__ == "__main__":
-    main(prog_name="stgctl")  # pragma: no cover
+    main()  # pragma: no cover
