@@ -39,9 +39,9 @@ class MandateImmediate:
             def wrapper(instance, *args: Any, **kwargs: Any) -> T | None:
                 instance._reset()
                 instance._serial.reset_input_buffer()
-                result = func(instance, *args, **kwargs)
+                func(instance, *args, **kwargs)
                 instance.send()
-                return result
+                return instance._readall()
 
             return wrapper
         else:
@@ -55,7 +55,8 @@ class MandateImmediate:
                     instance._serial.reset_input_buffer()
                     func(instance, *args, **kwargs)
                     instance.send()
-                    return None
+
+                    return instance._readall()
                 else:
                     return func(instance, *args, **kwargs)
 
@@ -154,6 +155,7 @@ class VMX:
         "rsm",
         "res",
         "!",
+        "J",
     )
 
     # Status request commands
@@ -192,9 +194,11 @@ class VMX:
         self.close()
 
     def __del__(self) -> None:
+        logger.debug("Entering del")
         self.close()
 
     def startup(self) -> None:
+        self.jog()
         self.reset()
         time.sleep(1)
         self.echo(echo_state=True)
@@ -207,7 +211,8 @@ class VMX:
                 raise VmxNotReadyError("Connecting to the VMX has timed out.")
 
     def close(self) -> None:
-        self.kill()
+        # self.kill()
+        logger.debug("Closing serial connection to VMX.")
         self._serial.close()
 
     def _write(self, cmd: SerialCommand) -> None:
@@ -221,7 +226,7 @@ class VMX:
         return readout
 
     def _read(self) -> bytes:
-        readout = self._serial.readall()
+        readout = self._serial.read()
         return readout
 
     def _reset(self) -> None:
@@ -253,7 +258,7 @@ class VMX:
         return self
 
     @MandateImmediate()
-    def reset(self) -> None:
+    def reset(self) -> bytes:
         self.op_cmd("res")
 
     @MandateImmediate(False)
@@ -300,25 +305,29 @@ class VMX:
         return self.op_cmd("N")
 
     @MandateImmediate()
-    def echo(self, echo_state: bool = False) -> None:
+    def echo(self, echo_state: bool = False) -> bytes:
         if echo_state:
             self.op_cmd("F")
         else:
             self.op_cmd("E")
 
+    @MandateImmediate()
+    def jog(self) -> bytes:
+        self.op_cmd("J")
+
     # `D`, `K`, or `!` are ignored in the middle of a command.
     # Sending `D` or `K` to an active program decelerates/kills the program immediately.
     # These methods thus only support the "now" mode and cannot be chained.
     @MandateImmediate()
-    def kill(self) -> None:
+    def kill(self) -> bytes:
         self.op_cmd("K")
 
     @MandateImmediate()
-    def decel(self) -> None:
+    def decel(self) -> bytes:
         self.op_cmd("D")
 
     @MandateImmediate()
-    def record_posn(self) -> None:
+    def record_posn(self) -> bytes:
         """Records current positions in FIFO buffer.
 
         Only works when the VMX is actively indexing.
@@ -334,7 +343,6 @@ class VMX:
     @MandateImmediate()
     def verify(self) -> bytes:
         self.status_cmd("V")
-        return self._readall()
 
     def isready(self) -> bool:
         state = self.verify()
@@ -349,14 +357,12 @@ class VMX:
         if recorded:
             cmd = axis.name.lower()
         self.status_cmd(cmd)
-        return self._readall()
 
     # `lst` will list out current program.
     #  Anything outside of motor commands is not stored in a program.
     @MandateImmediate()
     def lst(self) -> bytes:
         self.status_cmd("lst")
-        return self._readall()
 
     # Start of motor commands
 

@@ -7,6 +7,10 @@ class Size:
     X: int
     Y: int
 
+    def __post_init__(self) -> None:
+        self.X = int(round(self.X))
+        self.Y = int(round(self.Y))
+
     def __iter__(self) -> Iterator[int]:
         yield self.X
         yield self.Y

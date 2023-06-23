@@ -11,6 +11,9 @@ __pycache__/
 /node_modules
 requirements.txt
 
+# Ignore scratch scripts
+scratch_*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

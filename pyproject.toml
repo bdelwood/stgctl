@@ -51,6 +51,9 @@ myst-parser = {version = ">=0.16.1"}
 [tool.poetry.scripts]
 stgctl = "stgctl.__main__:main"
 
+[tool.poetry.group.dev.dependencies]
+pytest-mock = "^3.11.1"
+
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
 tests = ["tests", "*/tests"]

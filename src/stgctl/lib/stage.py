@@ -19,7 +19,7 @@ class XYStage:
             Size(*settings.STEP_SIZE) if settings.STEP_SIZE else settings.STEP_SIZE
         )
         self.observing_time = settings.OBSERVE_TIME
-        self.gcp_signal = Signaller(settings.SIGNAL_HOST, settings.SIGNAL_USER)
+        self.signaller = Signaller(settings.SIGNAL_HOST, settings.SIGNAL_USER)
 
     def startup(self):
         logger.info(
@@ -93,9 +93,10 @@ class XYStage:
 
         if signal:
             logger.info("Sending start signal.")
-            self.gcp_signal.start_aq()
+            msg = self.signaller.start_aq()
+            logger.debug(f"Signal returned\n {msg.stdout}")
 
-        logger.info(f"Starting a raster with {self._trajectory.size} points.")
+        logger.info(f"Starting a raster with {len(self._trajectory)} points.")
         try:
             for i, coord in enumerate(self._trajectory):
                 logger.info(f"Now indexing to {coord}.")
@@ -106,14 +107,15 @@ class XYStage:
                 self.VMX.run().send()
                 logger.info(
                     f"Starting (now/total rows, now/total columns).\n \
-                            ({divmod(i,self.grid_size.X)[1]}/{self.grid_size.X},{divmod(i,self.grid_size.X)[0]}/{self.grid_size.Y})"
+                      ({divmod(i,self.grid_size.X)[1]+1}/{self.grid_size.X},{divmod(i,self.grid_size.X)[0]+1}/{self.grid_size.Y})"
                 )
                 self.VMX.wait_for_complete(timeout=600)
                 logger.info("Program complete, moving to next position.")
         finally:
             if signal:
-                logger.info("Sending stop signal.")
-                self.gcp_signal.stop_aq()
+                logger.info("Sending end signal.")
+                self.signaller.end_aq()
+                logger.debug(f"Signal returned\n {msg.stdout}")
 
         logger.info(f"Completed {self.grid_size} raster.")
 
@@ -127,14 +129,20 @@ class XYStage:
             )
             # gather positions into array where each row is a coordinate
             lsp = numpy.array(self.limit_switch_positions)
+            logger.debug(f"Using this array of limit switch positions:\n {lsp}")
             # diff sequential rows to get coordinate distance between points
-            stg_len = numpy.diff(lsp)
-            # total index for each direction is dependent on the startup strategy.
-            # This assumes the origin is at the +X,+Y limit switches, and the
-            # startup trajectory is > +X,-Y > -X,-Y > -X,+Y > +X,+Y
-            x_total_idx = numpy.mean(stg_len[1, 1], stg_len[2, 1])
-            y_total_idx = numpy.mean(stg_len[0, 1], stg_len[-1, 1])
+            stg_len = numpy.abs(numpy.diff(lsp, axis=0))
+            # Since we traveled on each size twice, might as well average them.
+            # Sometimes the VMX reports a 1-10 index difference at the limit switches.
+            # Just ignore anything below the mean, should catch these small glitches
+            x_total_idx = numpy.mean(
+                stg_len[:, 0][stg_len[:, 0] > numpy.mean(numpy.abs(stg_len[:, 0]))]
+            )
+            y_total_idx = numpy.mean(
+                stg_len[:, 1][stg_len[:, 1] > numpy.mean(numpy.abs(stg_len[:, 1]))]
+            )
             # To not hit the limit switches in normal operation, we offset by an inch
+            logger.debug(f"Number of indexes in (x,y):\n ({x_total_idx},{y_total_idx}")
             x_reduced_idx = x_total_idx - x_total_idx * (2 * 1 / 30)
             y_reduced_idx = y_total_idx - y_total_idx * (2 * 1 / 30)
             # We now split each dimension
@@ -147,9 +155,16 @@ class XYStage:
             return
 
         logger.debug(
-            f"Generating 2D raster trajectory with grid size {self.grid_size} and {self.step_size}."
+            f"Generating 2D raster trajectory with grid size {self.grid_size} and step size {self.step_size}."
         )
         self._trajectory = gen_2d_trajectory(self.grid_size, self.step_size)
+        # Need to offset from limit switches
+        self._trajectory += [
+            numpy.round(x_total_idx * (1 * 1 / 30)).astype(int),
+            numpy.round(y_total_idx * (1 * 1 / 30)).astype(int),
+        ]
+        # Since the origin is at +X,+Y limit switches, we can only index to negative numbers
+        self._trajectory = -self._trajectory
 
     @property
     def trajectory(self):
