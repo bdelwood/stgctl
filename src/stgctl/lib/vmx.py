@@ -194,7 +194,6 @@ class VMX:
         self.close()
 
     def __del__(self) -> None:
-        logger.debug("Entering del")
         self.close()
 
     def startup(self) -> None:
@@ -211,9 +210,9 @@ class VMX:
                 raise VmxNotReadyError("Connecting to the VMX has timed out.")
 
     def close(self) -> None:
-        # self.kill()
-        logger.debug("Closing serial connection to VMX.")
-        self._serial.close()
+        if hasattr(self, "_serial"):
+            logger.debug("Closing serial connection to VMX.")
+            self._serial.close()
 
     def _write(self, cmd: SerialCommand) -> None:
         logger.debug(f"Writing command: {cmd}")

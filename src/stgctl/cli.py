@@ -28,15 +28,15 @@ def stages(
         raise typer.BadParameter(
             "Raster runs homing sequence. Options are mutually exclusive."
         )
-
-    stg = XYStage()
-    if raster:
-        logger.info("Entering rastering mode.")
-        stg.startup()
-        stg.raster()
-    if home:
-        logger.info("Entering homing mode.")
-        stg.home()
+    if raster or home:
+        stg = XYStage()
+        if raster:
+            logger.info("Entering rastering mode.")
+            stg.startup()
+            stg.raster()
+        elif home:
+            logger.info("Entering homing mode.")
+            stg.home()
 
 
 @cli.command()
