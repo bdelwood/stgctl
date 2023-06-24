@@ -44,3 +44,7 @@ def stages(
 def vmx():
     """Subcommand for controlling VMX directly."""
     raise NotImplementedError("VMX command line interface not implemented yet.")
+
+
+# click object for docs
+typer_click_object = typer.main.get_command(cli)

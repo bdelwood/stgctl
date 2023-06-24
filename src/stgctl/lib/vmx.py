@@ -245,8 +245,10 @@ class VMX:
         """Initialize a VMX instance.
 
         Args:
-            port (str, optional): The port on which the motor controller is connected.
-            If not provided, the port will be determined automatically.
+            port (str, optional): The port on which the motor controller is connected. If not provided, the port will be determined automatically.
+
+        Raises:
+            VmxNotReadyError: Returns error if VMX does not send ready response
         """
         logger.debug(f"Using settings:\n{pformat(settings.dict())}")
         if not port:
@@ -472,8 +474,7 @@ class VMX:
         """Set the echo mode.
 
         Args:
-            echo_state (bool): The state to set the echo mode to. Defaults to False.
-            False is no-echo, or F. The VMX does not send the command written to serial to the serial buffer.
+            echo_state (bool): The state to set the echo mode to. Defaults to False. False is no-echo, or F. The VMX does not send the command written to serial to the serial buffer.
 
         Returns:
             bytes: The current echo mode setting if echo_state is not given, or an acknowledgement of setting echo mode if it is.
@@ -660,7 +661,7 @@ class VMX:
         Supports running with `now`.
 
         Args:
-            motor (Motor, optional): Motor to zero index. Defaults to Motor.X.
+            motor (Motor): Motor to zero index. Defaults to Motor.X.
 
         Returns:
             Self: VMX wirh appended command.

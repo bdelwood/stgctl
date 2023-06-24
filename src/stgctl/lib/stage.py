@@ -116,7 +116,7 @@ class XYStage:
         trajectory for raster.
 
         Args:
-            signal (bool, optional): Whether to execute aq signal remote commands. Defaults to True.
+            signal (bool): Whether to execute aq signal remote commands. Defaults to True.
         """
         # Use gen_trajectory to get a trajectory (X(t), Y(t))
         self.gen_trajectory()

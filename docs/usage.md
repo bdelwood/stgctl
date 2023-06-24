@@ -1,7 +1,7 @@
 # Usage
 
 ```{eval-rst}
-.. click:: stgctl.__main__:main
+.. click:: stgctl.cli:typer_click_object
     :prog: stgctl
     :nested: full
 ```
