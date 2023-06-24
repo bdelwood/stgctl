@@ -26,7 +26,7 @@ class Motor(IntEnum):
 
 
 # A generic used to represent the return type of the VMX class
-T = TypeVar("T", bound="VMX")
+T = TypeVar("T")
 
 
 class MandateImmediate:
@@ -558,7 +558,7 @@ class VMX:
         """
         # query state of VMX
         state = self.verify()
-        logger.debug(f"isready state is {state}")
+        logger.debug(f"isready state is {state!r}")
         if state == b"R":
             return True
         return False
