@@ -1,3 +1,6 @@
+"""Exceptions for stgctl."""
+
+
 class UnsupportedVmxCommandError(Exception):
     """Raised when the attempted command is not supported by the VMX library (yet0)."""
 

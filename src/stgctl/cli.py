@@ -3,7 +3,7 @@
 from typing import Annotated
 
 import typer
-from loguru import logger
+from loguru import logger as logger
 
 from stgctl.lib.stage import XYStage
 
@@ -21,14 +21,15 @@ def stages(
     ] = False,
 ):
     """Subcommand for controlling XY stage."""
-    logger.info("Initializing stages.")
-
-    logger.debug(f"{raster and home}")
+    # We want to make --raster and --home mutually exclusive.
+    # raster runs home, so running both together is redundant.
+    # Then there is the question of what order they should be run in.
     if raster and home:
         raise typer.BadParameter(
             "Raster runs homing sequence. Options are mutually exclusive."
         )
     if raster or home:
+        logger.info("Initializing stages.")
         stg = XYStage()
         if raster:
             logger.info("Entering rastering mode.")
