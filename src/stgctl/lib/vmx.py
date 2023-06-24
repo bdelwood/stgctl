@@ -36,7 +36,7 @@ class MandateImmediate:
         """Initialize MandateImmediate.
 
         Args:
-            immediate (bool, optional):
+            immediate (bool):
                 If True, the command must be executed immediately,
                 if False, the command can be queued for later send. (default: True).
         """
@@ -365,7 +365,7 @@ class VMX:
         Typically used in try-except-finally block.
 
         Args:
-            timeout (float, optional): Time to wait until program considered a failure. Defaults to 60.0.
+            timeout (float): Time to wait until program considered a failure. Defaults to 60.0.
 
         Raises:
             TimeoutError: Raised when program takes longer than timeout.
@@ -472,7 +472,7 @@ class VMX:
         """Set the echo mode.
 
         Args:
-            echo_state (bool, optional): The state to set the echo mode to. Defaults to False.
+            echo_state (bool): The state to set the echo mode to. Defaults to False.
             False is no-echo, or F. The VMX does not send the command written to serial to the serial buffer.
 
         Returns:
@@ -568,8 +568,8 @@ class VMX:
         """Queries motor position for a particular axis.
 
         Args:
-            axis (Motor, optional): Which motor to query index. Defaults to Motor.X.
-            recorded (bool, optional): Whether to query recorded indexes. Defaults to False.
+            axis (Motor): Which motor to query index. Defaults to Motor.X.
+            recorded (bool): Whether to query recorded indexes. Defaults to False.
 
         Returns:
             bytes: If recorded, gives last 4 indexes where; these are cleared at the start of every program
@@ -600,8 +600,8 @@ class VMX:
 
         Args:
             idx (int): where to index, in steps
-            motor (Motor, optional): Motor to index. Defaults to Motor.X.
-            relative (bool, optional): Whether position is relative to current position. Defaults to True.
+            motor (Motor): Motor to index. Defaults to Motor.X.
+            relative (bool): Whether position is relative to current position. Defaults to True.
 
         Returns:
             Self: VMX instance with appended commands.
@@ -622,8 +622,8 @@ class VMX:
         Supports running with `now`.
 
         Args:
-            motor (Motor, optional): . Which motor to index to Motor.X.
-            pos (bool, optional): Index to the positive limit switch. Defaults to True.
+            motor (Motor): . Which motor to index to Motor.X.
+            pos (bool): Index to the positive limit switch. Defaults to True.
 
         Returns:
             Self: VMX instance with appended commands.
@@ -643,7 +643,7 @@ class VMX:
         Supports running with `now`.
 
         Args:
-            motor (Motor, optional): Which motor to index to its zero point. Defaults to Motor.X.
+            motor (Motor): Which motor to index to its zero point. Defaults to Motor.X.
 
         Returns:
             Self: VMX instance with appended commands.
@@ -678,7 +678,7 @@ class VMX:
 
         Args:
             speed (int): speed in idx/sec
-            motor (Motor, optional): Motor to set speed for. Defaults to Motor.X.
+            motor (Motor): Motor to set speed for. Defaults to Motor.X.
 
         Returns:
             Self: VMX with appended commands.

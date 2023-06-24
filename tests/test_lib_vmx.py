@@ -128,6 +128,7 @@ def test_move_absolute(vmx, mock_serial):
 
 
 def test_to_limit_positive(vmx, mock_serial):
+    mock_serial.readall.return_value = b""
     # Call the to_limit method with pos=True
     vmx.to_limit(now=True, motor=1, pos=True)
     # Verify that the write method of the mock serial connection is called with the expected command
