@@ -156,7 +156,7 @@ class XYStage:
         finally:
             if signal:
                 logger.info("Sending end signal.")
-                self.signaller.end_aq()
+                msg = self.signaller.end_aq()
                 logger.debug(f"Signal returned\n {msg.stdout}")
 
         logger.info(f"Completed {self.grid_size} raster.")
