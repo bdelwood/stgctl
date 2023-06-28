@@ -34,7 +34,7 @@ class Signaller:
         Returns:
             Result: result of remote command
         """
-        return self.signal(SignalCommand.END_AQ)
+        return self.signal(SignalCommand.START_AQ)
 
     def end_aq(self) -> Result:
         """Send end acquisition signal.
@@ -42,7 +42,7 @@ class Signaller:
         Returns:
             Result: result of remote command.
         """
-        return self.signal(SignalCommand.START_AQ)
+        return self.signal(SignalCommand.END_AQ)
 
     def signal(self, cmd: str) -> Result:
         """Thin wrapper around Fabric Connection.
