@@ -1,6 +1,8 @@
 """Command line interface for stgctl."""
 
+from importlib import metadata
 from typing import Annotated
+from typing import Optional
 
 import typer
 from loguru import logger as logger
@@ -9,6 +11,19 @@ from stgctl.lib.stage import XYStage
 
 
 cli = typer.Typer()
+
+
+__version__ = metadata.version(__package__)
+
+
+def version_callback(value: bool):
+    """Print version information.
+
+    Args:
+        value (bool): typer expects callback to accept bool
+    """
+    if value:
+        typer.echo(f"{__version__}")
 
 
 @cli.command()
@@ -44,6 +59,17 @@ def stages(
 def vmx():
     """Subcommand for controlling VMX directly."""
     raise NotImplementedError("VMX command line interface not implemented yet.")
+
+
+@cli.callback(invoke_without_command=True)
+def main(
+    version: Annotated[
+        Optional[bool],
+        typer.Option("--version", callback=version_callback, is_eager=True),
+    ] = None,
+):
+    """Callback for main function to allow --version option without any subcommands."""
+    pass
 
 
 # click object for docs
