@@ -34,16 +34,19 @@ def stages(
     home: Annotated[
         bool, typer.Option("--home", help="Run stage homing sequence.")
     ] = False,
+    test_signal: Annotated[
+        bool, typer.Option("--test-signal", help="Run signal testing sequence")
+    ] = False,
 ):
     """Subcommand for controlling XY stage."""
     # We want to make --raster and --home mutually exclusive.
     # raster runs home, so running both together is redundant.
     # Then there is the question of what order they should be run in.
-    if raster and home:
+    if sum([home, raster, test_signal]) >= 2:
         raise typer.BadParameter(
             "Raster runs homing sequence. Options are mutually exclusive."
         )
-    if raster or home:
+    if raster or home or test_signal:
         logger.info("Initializing stages.")
         stg = XYStage()
         if raster:
@@ -53,6 +56,9 @@ def stages(
         elif home:
             logger.info("Entering homing mode.")
             stg.home()
+        elif test_signal:
+            logger.info("Running signal test sequence.")
+            stg.test_signal_setup()
 
 
 @cli.command()

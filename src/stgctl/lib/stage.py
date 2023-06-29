@@ -131,7 +131,7 @@ class XYStage:
 
         if signal:
             logger.info("Sending start signal.")
-            # Send stary signal over ssh
+            # Send start signal over ssh
             msg = self.signaller.start_aq()
             logger.debug(f"Signal returned\n {msg.stdout}")
 
@@ -161,7 +161,45 @@ class XYStage:
 
         logger.info(f"Completed {self.grid_size} raster.")
 
-    def gen_trajectory(self):
+    def test_signal_setup(self) -> None:
+        """Move stages to home, signal start, move back to home, signal end.
+
+        Useful for ensuring signalling is correct.
+        """
+        self.home()
+
+        # set motor speed
+        test_idx_speed = 1500
+        self.VMX.clear().speed(motor=Motor.X, speed=test_idx_speed).speed(
+            motor=Motor.Y, speed=test_idx_speed
+        ).run().send()
+        logger.info(f"Set motor speed to {test_idx_speed} idx/s")
+
+        # Signal start
+        logger.info("Sending start signal.")
+        msg = self.signaller.start_aq()
+        logger.info(f"Signal returned\n {msg.stdout}")
+
+        # Move index -5000,-5000
+        test_idx = -5000
+        logger.info(f"Moving to {test_idx}.")
+        self.VMX.clear()
+        self.VMX.move(motor=Motor.X, idx=test_idx, relative=True)
+        self.VMX.move(motor=Motor.Y, idx=test_idx, relative=True)
+        self.VMX.pause(time=self.observing_time)
+        self.VMX.run().send()
+
+        # home again
+        self.home()
+
+        # Signal end
+        logger.info("Sending end signal.")
+        msg = self.signaller.end_aq()
+        logger.info(f"Signal returned\n {msg.stdout}")
+
+        logger.info("Testing signalling complete.")
+
+    def gen_trajectory(self) -> None:
         """Generate grid raster trajectory."""
         # GRID_SIZE is required/has a default. If step size given,
         # we do not use the values from homing
