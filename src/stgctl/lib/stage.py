@@ -188,16 +188,20 @@ class XYStage:
         self.VMX.move(motor=Motor.Y, idx=test_idx, relative=True)
         self.VMX.pause(time=self.observing_time)
         self.VMX.run().send()
+        # Since any wait_for_complete can time out, wrap whole loop in try-finally
+        # We want the timeouterror to be raised and crash the script
+        try:
+            self.VMX.wait_for_complete(timeout=600)
+        finally:
+            # Signal end
+            logger.info("Sending end signal.")
+            msg = self.signaller.end_aq()
+            logger.info(f"Signal returned\n {msg.stdout}")
+
+            logger.info("Testing signalling complete.")
 
         # home again
         self.home()
-
-        # Signal end
-        logger.info("Sending end signal.")
-        msg = self.signaller.end_aq()
-        logger.info(f"Signal returned\n {msg.stdout}")
-
-        logger.info("Testing signalling complete.")
 
     def gen_trajectory(self) -> None:
         """Generate grid raster trajectory."""
