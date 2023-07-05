@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stgctl"
-version = "v0.0.1"
+version = "0.0.1.dev1+4a444e7"
 description = "stage-control"
 authors = ["Brodi Elwood <bdelwood@fas.harvard.edu>"]
 license = "MIT"

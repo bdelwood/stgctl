@@ -53,7 +53,7 @@ class XYStage:
         # Set speed again, just in case.
         self.VMX.clear().speed(motor=Motor.X, speed=2000).speed(
             motor=Motor.Y, speed=2000
-        )
+        ).run().send()
         # +X,+Y > +X,-Y > -X,-Y > -X,+Y > +X,+Y
         switch_values = [(True, False), (False, False), (False, True), (True, True)]
         for switch_value in switch_values:
