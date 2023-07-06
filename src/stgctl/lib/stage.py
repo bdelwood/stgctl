@@ -248,8 +248,8 @@ class XYStage:
         # Need to offset from limit switches
         # TODO: check this is correct
         self._trajectory += [
-            numpy.round(x_total_idx * (1 * 1 / 30)).astype(int),
-            numpy.round(y_total_idx * (1 * 1 / 30)).astype(int),
+            numpy.round(x_total_idx * (1.5 / 30)).astype(int),
+            numpy.round(y_total_idx * (1.5 / 30)).astype(int),
         ]
         # Since the origin is at +X,+Y limit switches, we can only index to negative numbers
         self._trajectory = -self._trajectory
