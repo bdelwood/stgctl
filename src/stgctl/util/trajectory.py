@@ -19,11 +19,11 @@ def linear_grid(
 
     Returns:
         tuple[numpy.ndarray, numpy.ndarray]: tuple where first elem is x raster points,
-        second is y raster points.
+        second is y raster points. dtype of array is int
     """
-    x = numpy.arange(0, grid_size.X * step_size.X, step_size.X)
-    y = numpy.arange(0, grid_size.Y * step_size.Y, step_size.Y)
-    return (x, y)
+    x = numpy.linspace(0, grid_size.X * step_size.X, grid_size.X)
+    y = numpy.linspace(0, grid_size.Y * step_size.Y, grid_size.Y)
+    return (x.round().astype(int), y.round().astype(int))
 
 
 def path_2d_numpy(x: numpy.ndarray, y: numpy.ndarray) -> numpy.ndarray:

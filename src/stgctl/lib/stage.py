@@ -50,10 +50,7 @@ class XYStage:
         self.home()
         # +X,+Y is (0,0) by definition
         limit_switch_positions = [(0, 0)]
-        # Set speed again, just in case.
-        self.VMX.clear().speed(motor=Motor.X, speed=2000).speed(
-            motor=Motor.Y, speed=2000
-        ).run().send()
+
         # +X,+Y > +X,-Y > -X,-Y > -X,+Y > +X,+Y
         switch_values = [(True, False), (False, False), (False, True), (True, True)]
         for switch_value in switch_values:
@@ -247,12 +244,8 @@ class XYStage:
         self._trajectory = gen_2d_trajectory(self.grid_size, self.step_size)
         # Need to offset from limit switches
         offset = [
-            numpy.abs(
-                (self.step_size.X * (self.grid_size.X - 1) - x_total_idx) / 2
-            ).astype(int),
-            numpy.abs(
-                (self.step_size.Y * (self.grid_size.Y - 1) - y_total_idx) / 2
-            ).astype(int),
+            numpy.array(x_total_idx * (1 * 1 / 30)).astype(int),
+            numpy.array(y_total_idx * (1 * 1 / 30)).astype(int),
         ]
         self._trajectory += offset
         # Since the origin is at +X,+Y limit switches, we can only index to negative numbers
