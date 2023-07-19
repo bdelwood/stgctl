@@ -1,7 +1,6 @@
 # stage-control
 
 [![PyPI](https://img.shields.io/github/v/tag/bdelwood/stgctl?sort=semver)][gh_tag]
-[![Python Version](https://img.shields.io/pypi/pyversions/stgctl)][pypi status]
 [![License](https://img.shields.io/github/license/bdelwood/stgctl)][license]
 
 [![Read the documentation at https://stgctl.readthedocs.io/](https://img.shields.io/readthedocs/stgctl/latest.svg?label=Read%20the%20Docs)][read the docs]
@@ -18,30 +17,19 @@
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 
-## Features
-
-- TODO
-
-## Requirements
-
-- TODO
-
 ## Installation
 
 You can install _stage-control_ via [pip] from [PyPI]:
 
 ```console
-$ pip install stgctl
+$ git clone https://github.com/bdelwood/stgctl.git
+$ cd stgctl
+$ poetry install
 ```
 
 ## Usage
 
 Please see the [Command-line Reference] for details.
-
-## Contributing
-
-Contributions are very welcome.
-To learn more, see the [Contributor Guide].
 
 ## License
 
@@ -53,13 +41,7 @@ _stage-control_ is free and open source software.
 If you encounter any problems,
 please [file an issue] along with a detailed description.
 
-## Credits
-
-This project was generated from [@cjolowicz]'s [Hypermodern Python Cookiecutter] template.
-
-[@cjolowicz]: https://github.com/cjolowicz
 [pypi]: https://pypi.org/
-[hypermodern python cookiecutter]: https://github.com/cjolowicz/cookiecutter-hypermodern-python
 [file an issue]: https://github.com/bdelwood/stgctl/issues
 [pip]: https://pip.pypa.io/
 
