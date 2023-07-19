@@ -47,6 +47,6 @@ please [file an issue] along with a detailed description.
 
 <!-- github-only -->
 
-[license]: https://github.com/bdelwood/stgctl/blob/main/LICENSE
+[license]: https://github.com/bdelwood/stgctl/blob/master/LICENSE
 [contributor guide]: https://github.com/bdelwood/stgctl/blob/main/CONTRIBUTING.md
 [command-line reference]: https://stgctl.readthedocs.io/en/latest/usage.html
