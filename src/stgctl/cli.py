@@ -37,6 +37,9 @@ def stages(
     test_signal: Annotated[
         bool, typer.Option("--test-signal", help="Run signal testing sequence")
     ] = False,
+    no_signal: bool = typer.Option(
+        False, "--no-signal", help="Run raster without signal."
+    ),
 ):
     """Subcommand for controlling XY stage."""
     # We want to make --raster and --home mutually exclusive.
@@ -46,6 +49,8 @@ def stages(
         raise typer.BadParameter(
             "Raster runs homing sequence. Options are mutually exclusive."
         )
+    if no_signal and not raster:
+        raise typer.BadParameter("--no-signal option is only applicable with --raster.")
     if raster or home or test_signal:
         logger.info("Initializing stages.")
         stg = XYStage()
@@ -53,6 +58,7 @@ def stages(
             logger.info("Entering rastering mode.")
             stg.startup()
             stg.raster()
+            stg.raster(signal=not no_signal)
         elif home:
             logger.info("Entering homing mode.")
             stg.home()
