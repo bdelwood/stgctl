@@ -57,7 +57,6 @@ def stages(
         if raster:
             logger.info("Entering rastering mode.")
             stg.startup()
-            stg.raster()
             stg.raster(signal=not no_signal)
         elif home:
             logger.info("Entering homing mode.")
