@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stgctl"
-version = "0.4.0"
+version = "0.4.1"
 description = "stage-control"
 authors = ["Brodi Elwood <bdelwood@fas.harvard.edu>"]
 license = "MIT"
@@ -14,7 +14,7 @@ classifiers = ["Development Status :: 4 - Beta"]
 Changelog = "https://github.com/bdelwood/stgctl/releases"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 pyserial = "^3.5"
 loguru = "^0.7.0"
 pydantic = { extras = ["dotenv"], version = "^1.10.9" }
