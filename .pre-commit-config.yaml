@@ -29,6 +29,7 @@ repos:
         entry: check-yaml
         language: system
         types: [yaml]
+      # only run when run manually (cli or nox)
       - id: darglint2
         name: darglint2
         entry: darglint2
