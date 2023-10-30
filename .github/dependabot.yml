@@ -8,7 +8,9 @@ updates:
       interval: monthly
     ignore:
       - dependency-name: "*"
-        update-types: ["version-update:semver-patch"]
+        update-types:
+          ["version-update:semver-patch", "version-update:semver-minor"]
+
   - package-ecosystem: pip
     reviewers:
       - bdelwood
@@ -17,7 +19,9 @@ updates:
       interval: monthly
     ignore:
       - dependency-name: "*"
-        update-types: ["version-update:semver-patch"]
+        update-types:
+          ["version-update:semver-patch", "version-update:semver-minor"]
+
   - package-ecosystem: pip
     reviewers:
       - bdelwood
@@ -26,7 +30,9 @@ updates:
       interval: monthly
     ignore:
       - dependency-name: "*"
-        update-types: ["version-update:semver-patch"]
+        update-types:
+          ["version-update:semver-patch", "version-update:semver-minor"]
+
   - package-ecosystem: pip
     directory: "/"
     reviewers:
@@ -38,4 +44,5 @@ updates:
       - dependency-type: "all"
     ignore:
       - dependency-name: "*"
-        update-types: ["version-update:semver-patch"]
+        update-types:
+          ["version-update:semver-patch", "version-update:semver-minor"]

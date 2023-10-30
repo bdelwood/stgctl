@@ -8,12 +8,13 @@ repos:
         types: [python]
         require_serial: true
         args: ["-c", "bandit.yml"]
-      - id: black
-        name: black
-        entry: black
+      - id: ruff-format
+        name: ruff formatting
+        entry: ruff
         language: system
         types: [python]
         require_serial: true
+        args: [format]
       - id: check-added-large-files
         name: Check for added large files
         entry: check-added-large-files
@@ -40,20 +41,13 @@ repos:
         language: system
         types: [text]
         stages: [commit, push, manual]
-      - id: ruff
-        name: ruff
+      - id: ruff-lint
+        name: ruff linting
         entry: ruff
         language: system
         types: [python]
         require_serial: true
         args: [--fix, --exit-non-zero-on-fix]
-      - id: pyupgrade
-        name: pyupgrade
-        description: Automatically upgrade syntax for newer versions.
-        entry: pyupgrade
-        language: system
-        types: [python]
-        args: [--py39-plus]
       - id: trailing-whitespace
         name: Trim Trailing Whitespace
         entry: trailing-whitespace-fixer
