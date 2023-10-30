@@ -1,6 +1,5 @@
 """Tests for VMX lib"""
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from serial import Serial

@@ -9,7 +9,6 @@ from re import Pattern
 from loguru import logger
 from pydantic import BaseSettings
 
-
 # Logger that logs to file
 log_path = Path("./logs") / Path(
     f'stgctl_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'

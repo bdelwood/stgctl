@@ -4,8 +4,7 @@ import numpy
 from loguru import logger
 from stgctl.core.settings import settings
 from stgctl.lib.signal import Signaller
-from stgctl.lib.vmx import VMX
-from stgctl.lib.vmx import Motor
+from stgctl.lib.vmx import VMX, Motor
 from stgctl.schema.models import Size
 from stgctl.util.trajectory import gen_2d_trajectory
 

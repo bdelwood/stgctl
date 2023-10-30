@@ -2,8 +2,7 @@
 
 from enum import StrEnum
 
-from fabric import Connection
-from fabric import Result
+from fabric import Connection, Result
 from stgctl.core.settings import settings
 
 

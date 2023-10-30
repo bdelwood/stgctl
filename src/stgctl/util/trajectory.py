@@ -3,7 +3,6 @@
 import numpy
 from stgctl.schema.models import Size
 
-
 grid_size = 60
 step_size = 1867
 

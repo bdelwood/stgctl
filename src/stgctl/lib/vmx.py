@@ -4,16 +4,16 @@ import time
 from collections.abc import Callable
 from enum import IntEnum
 from pprint import pformat
-from typing import Any
-from typing import Self
-from typing import TypeVar
+from typing import Any, Self, TypeVar
 
 import serial
 from loguru import logger
 from stgctl.core.settings import settings
-from stgctl.lib.exceptions import InvalidVMXCommandError
-from stgctl.lib.exceptions import UnsupportedVmxCommandError
-from stgctl.lib.exceptions import VmxNotReadyError
+from stgctl.lib.exceptions import (
+    InvalidVMXCommandError,
+    UnsupportedVmxCommandError,
+    VmxNotReadyError,
+)
 from stgctl.util.ports import grep_serial_ports
 
 
@@ -478,7 +478,7 @@ class VMX:
 
         Returns:
             bytes: The current echo mode setting if echo_state is not given, or an acknowledgement of setting echo mode if it is.
-        """
+        """  # noqa: DAR202
         if echo_state:
             self.op_cmd("F")
         else:

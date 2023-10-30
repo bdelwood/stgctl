@@ -1,14 +1,12 @@
 """Command line interface for stgctl."""
 
 from importlib import metadata
-from typing import Annotated
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from loguru import logger as logger
 
 from stgctl.lib.stage import XYStage
-
 
 cli = typer.Typer()
 
