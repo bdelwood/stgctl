@@ -11,6 +11,8 @@ from stgctl.lib.stage import XYStage
 
 cli = typer.Typer()
 
+stages_cli = typer.Typer()
+
 
 __version__ = metadata.version(__package__)
 
@@ -25,17 +27,10 @@ def version_callback(value: bool):
         typer.echo(f"{__version__}")
 
 
-# This function acts like a namespace holder for subcommands
-@cli.command()
-def stages():
-    """Subcommand for controlling XY stage."""
-    pass
-
-
-@cli.command()
+@stages_cli.command()
 def run(
     sequence: str = typer.Argument(
-        ..., help="The sequence to run: 'raster', 'home', or 'test-signal'."
+        ..., help="The sequence to run: 'startup', 'raster', 'home', or 'test-signal'."
     ),
     no_signal: bool = typer.Option(
         False, "--no-signal", help="Run raster without signal."
@@ -50,9 +45,9 @@ def run(
     ),
 ):
     """Run stage sequences."""
-    if sequence not in ["raster", "home", "test-signal"]:
+    if sequence not in ["startup", "raster", "home", "test-signal"]:
         raise typer.BadParameter(
-            "Invalid sequence. Must be one of 'raster', 'home', or 'test-signal'."
+            "Invalid sequence. Must be one of 'startup', 'raster', 'home', or 'test-signal'."
         )
 
     if no_signal and sequence != "raster":
@@ -67,7 +62,7 @@ def run(
 
     if use_saved and sequence != "raster":
         raise typer.BadParameter(
-            "--use-saved option is only applicable with 'startup' sequence."
+            "--use-saved option is only applicable with 'raster' sequence."
         )
 
     typer.echo(f"Running {sequence} sequence.")
@@ -120,7 +115,7 @@ def main(
 
 
 # adding subcommand under stages
-stages.add_typer(cli, name="run", help="Run sequences.")
+cli.add_typer(stages_cli, name="stages", help="Run sequences.")
 
 # click object for docs
 typer_click_object = typer.main.get_command(cli)

@@ -140,6 +140,8 @@ class XYStage:
             msg = self.signaller.start_aq()
             logger.debug(f"Signal returned\n {msg.stdout}")
 
+        self.VMX.clear(now=True)
+
         logger.info(f"Starting a raster with {len(self._trajectory)} points.")
         # Since any wait_for_complete can time out, wrap whole loop in try-finally
         # We want the timeouterror to be raised and crash the script
