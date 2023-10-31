@@ -1,5 +1,7 @@
 """Class to provide quick API for controlling two Velmex stages."""
 
+import json
+
 import numpy
 from loguru import logger
 from stgctl.core.settings import settings
@@ -26,6 +28,7 @@ class XYStage:
         """
         # Initialize VMX device
         self.VMX = VMX(port=settings.VMX_DEVICE_PORT)
+        self._limit_switch_positions = None
         # Grab settings for rastering, gather into Size enum
         self.grid_size = Size(*settings.GRID_SIZE)
         self.step_size = (
@@ -35,7 +38,7 @@ class XYStage:
         # Set up remote command execution
         self.signaller = Signaller(settings.SIGNAL_HOST, settings.SIGNAL_USER)
 
-    def startup(self):
+    def startup(self, save: bool = False):
         """Run startup sequence.
 
         Homes the stages to +X,+Y limit switches.
@@ -79,6 +82,12 @@ class XYStage:
 
         logger.info("Stages have recorded limit switch positions.")
         self.limit_switch_positions = limit_switch_positions
+
+        if save:
+            save_path = "limit_switch_positions.json"
+            with open(save_path, "w") as f:
+                json.dump(self.limit_switch_positions, f)
+            logger.info(f"Saved limit switch positions to {save_path}")
 
     def home(self) -> None:
         """Run homing sequence.
@@ -249,6 +258,25 @@ class XYStage:
         self._trajectory += offset
         # Since the origin is at +X,+Y limit switches, we can only index to negative numbers
         self._trajectory = -self._trajectory
+
+    @property
+    def limit_switch_positions(self) -> list:
+        """Get list of limit switch positions.
+
+        Returns:
+            list: limit switch positions
+        """
+        return self._limit_switch_positions
+
+    @limit_switch_positions.setter
+    def limit_switch_positions(self, value: list):
+        """Set limit switch positions.
+
+        Args:
+            value (list): List of limit switch positions as (x, y) tuples
+
+        """
+        self._limit_switch_positions = value
 
     @property
     def trajectory(self) -> numpy.ndarray:

@@ -1,5 +1,6 @@
 """Command line interface for stgctl."""
 
+import json
 from importlib import metadata
 from typing import Annotated, Optional
 
@@ -24,42 +25,79 @@ def version_callback(value: bool):
         typer.echo(f"{__version__}")
 
 
+# This function acts like a namespace holder for subcommands
 @cli.command()
-def stages(
-    raster: Annotated[
-        bool, typer.Option("--raster", help="Run stage raster sequence.")
-    ] = False,
-    home: Annotated[
-        bool, typer.Option("--home", help="Run stage homing sequence.")
-    ] = False,
-    test_signal: Annotated[
-        bool, typer.Option("--test-signal", help="Run signal testing sequence")
-    ] = False,
+def stages():
+    """Subcommand for controlling XY stage."""
+    pass
+
+
+@cli.command()
+def run(
+    sequence: str = typer.Argument(
+        ..., help="The sequence to run: 'raster', 'home', or 'test-signal'."
+    ),
     no_signal: bool = typer.Option(
         False, "--no-signal", help="Run raster without signal."
     ),
+    save_ls_posns: bool = typer.Option(
+        False, "--save-ls-posns", help="Save limit switch positions after startup."
+    ),
+    use_saved: bool = typer.Option(
+        False,
+        "--use-saved",
+        help="Use saved limit switch positions. Must be in proper format.",
+    ),
 ):
-    """Subcommand for controlling XY stage."""
-    # We want to make --raster and --home mutually exclusive.
-    # raster runs home, so running both together is redundant.
-    # Then there is the question of what order they should be run in.
-    if sum([home, raster, test_signal]) >= 2:
+    """Run stage sequences."""
+    if sequence not in ["raster", "home", "test-signal"]:
         raise typer.BadParameter(
-            "Raster runs homing sequence. Options are mutually exclusive."
+            "Invalid sequence. Must be one of 'raster', 'home', or 'test-signal'."
         )
-    if no_signal and not raster:
-        raise typer.BadParameter("--no-signal option is only applicable with --raster.")
-    if raster or home or test_signal:
-        logger.info("Initializing stages.")
-        stg = XYStage()
-        if raster:
+
+    if no_signal and sequence != "raster":
+        raise typer.BadParameter(
+            "--no-signal option is only applicable with 'raster' sequence."
+        )
+
+    if save_ls_posns and sequence != "startup":
+        raise typer.BadParameter(
+            "--save-ls-posns option is only applicable with 'startup' sequence."
+        )
+
+    if use_saved and sequence != "raster":
+        raise typer.BadParameter(
+            "--use-saved option is only applicable with 'startup' sequence."
+        )
+
+    typer.echo(f"Running {sequence} sequence.")
+
+    logger.info("Initializing stages.")
+    stg = XYStage()
+
+    # switch based on sequence argument
+    match sequence:
+        case "startup":
+            # startup logic
+            logger.info("Running startup squence.")
+            stg.startup(save=save_ls_posns)
+        case "raster":
+            # rastering logic
             logger.info("Entering rastering mode.")
-            stg.startup()
+            if use_saved:
+                logger.info("Loading limit switch positions.")
+                with open("limit_switch_positions.json") as f:
+                    stg.limit_switch_positions = json.load(f)
+                stg.home()
+            else:
+                stg.startup()
             stg.raster(signal=not no_signal)
-        elif home:
+        case "home":
+            # homing logic
             logger.info("Entering homing mode.")
             stg.home()
-        elif test_signal:
+        case "test-signal":
+            # test signal logic
             logger.info("Running signal test sequence.")
             stg.test_signal_setup()
 
@@ -80,6 +118,9 @@ def main(
     """Callback for main function to allow --version option without any subcommands."""
     pass
 
+
+# adding subcommand under stages
+stages.add_typer(cli, name="run", help="Run sequences.")
 
 # click object for docs
 typer_click_object = typer.main.get_command(cli)
