@@ -12,7 +12,7 @@ from stgctl.util.trajectory import gen_2d_trajectory
 
 
 class XYStage:
-    """Abstraction over VMX useful for controlling XY stages."""
+    """Abstraction over VMX class. Useful for controlling XY stages."""
 
     def __init__(self):
         """Initialize an instance of XYStage.
@@ -92,7 +92,7 @@ class XYStage:
     def home(self) -> None:
         """Run homing sequence.
 
-        Indexes to positive limit switches. Once there, sets it as origin.
+        Indexes to positive limit switches. Once there, sets it as the origin.
         """
         logger.info("Sending stages to positive limit switches.")
         self.VMX.clear().speed(motor=Motor.X, speed=2000).speed(
@@ -115,7 +115,7 @@ class XYStage:
             )
 
     def raster(self, signal: bool = True) -> None:
-        """Perform grid raster.
+        """Perform a grid raster.
 
         If step size omitted, calculates stage side lengths in idx in order to compute
         trajectory for raster.
@@ -169,9 +169,9 @@ class XYStage:
         logger.info(f"Completed {self.grid_size} raster.")
 
     def test_signal_setup(self) -> None:
-        """Move stages to home, signal start, move back to home, signal end.
+        """Moves stages to home, signals start, moves back to home, then signals end.
 
-        Useful for ensuring signalling is correct.
+        Useful for ensuring signalling behaves as expected.
         """
         self.home()
 

@@ -44,7 +44,10 @@ def run(
         help="Use saved limit switch positions. Must be in proper format.",
     ),
 ):
-    """Run stage sequences."""
+    """Run stage sequences.
+
+    Valid sequences: 'startup', 'raster', 'home', or 'test-signal'."
+    """
     if sequence not in ["startup", "raster", "home", "test-signal"]:
         raise typer.BadParameter(
             "Invalid sequence. Must be one of 'startup', 'raster', 'home', or 'test-signal'."

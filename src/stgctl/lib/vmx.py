@@ -291,8 +291,8 @@ class VMX:
     def startup(self) -> None:
         """Initialize VMX.
 
-        Puts it in jog mode, resetting it to power on state,
-        and waiting for "R" response.
+        Puts the motor controller in jog mode, resets it to the power on state,
+        and waits for "R" response.
 
 
         Raises:
@@ -362,7 +362,7 @@ class VMX:
         self._cmd = SerialCommand()
 
     def wait_for_complete(self, timeout: float = 60.0) -> None:
-        """_Wait until VMX program returns program-complete response.
+        """Wait until VMX program returns program-complete response.
 
         Typically used in try-except-finally block.
 
@@ -381,7 +381,8 @@ class VMX:
             # VMX returns ^ when program completes
             if data.decode() == "^":
                 return
-        raise TimeoutError("Waiting for program to complete timed out.")
+        msg = "Waiting for program to complete timed out."
+        raise TimeoutError(msg)
 
     def send(self) -> None:
         """Send current command string to VMX serial port.
@@ -398,7 +399,7 @@ class VMX:
 
     @Command("OP_CMDS")
     def op_cmd(self, cmd: str) -> Self:
-        """Operation command decorator. Appends the operation command to the current command sequence.
+        """Operation command helper method. Appends the operation command to the current command sequence.
 
         Args:
             cmd (str): The operation command to be appended.
@@ -434,13 +435,11 @@ class VMX:
 
     @MandateImmediate(False)
     def clear(self) -> Self:
-        """C immediately clears the program in VMX memory.
+        """Immediately clears the program in VMX memory.
 
-        Appends C to the command queue.
+        Appends C to the command queue. Inserting clear into the middle of a command has no real effect.
 
         Supports running with `now`.
-
-        Note that inserting clear into the middle of a command has no real effect.
 
         Clear does not stop the current program. It only clears it in VMX memory.
         You need to use kill or decelerate to immediately stop current program.
@@ -455,18 +454,19 @@ class VMX:
     def origin(self) -> Self:
         """Set the current position/index as the zero point for all motors.
 
-        Appends N to the commamd queue
+        Appends N to the command queue.
 
         Supports running with `now`
 
         Raises:
-            InvalidVMXCommandError: Only the first `N` is run in a program (others are effectively ignored.)
+            InvalidVMXCommandError: Only the first `N` is run in a program (others are effectively ignored).
 
         Returns:
             Self: VMX instance
         """
         if "N" in self._cmd:
-            raise InvalidVMXCommandError("Everything after the first N is ignored.")
+            msg = "Everything after the first N is ignored."
+            raise InvalidVMXCommandError(msg)
         return self.op_cmd("N")
 
     @MandateImmediate()
@@ -498,9 +498,9 @@ class VMX:
     # These methods thus only support the "now" mode and cannot be chained.
     @MandateImmediate()
     def kill(self) -> bytes:
-        """_Immediately stop the current program.
+        """Immediately stop the current program.
 
-        Decel should be highly favored over kill, as kill immediately cuts power to the motors,
+        Decel should be favored over kill, as kill immediately cuts power to the motors,
         and can cause the motor to lose its position.
 
         Returns:
@@ -519,7 +519,7 @@ class VMX:
 
     @MandateImmediate()
     def record_posn(self) -> bytes:
-        """Records current positions in FIFO buffer.
+        """Records the current positions into the FIFO buffer.
 
         Only works when the VMX is actively indexing.
 
@@ -532,7 +532,7 @@ class VMX:
 
     @Command("STATUS_CMDS")
     def status_cmd(self, status_cmd: str) -> Self:
-        """Status command decorator. Appends the operation command to the current command sequence.
+        """Status command helper method. Appends the status command to the current command sequence.
 
         Args:
             status_cmd (str): The status command to be appended.
@@ -573,7 +573,7 @@ class VMX:
             recorded (bool): Whether to query recorded indexes. Defaults to False.
 
         Returns:
-            bytes: If recorded, gives last 4 indexes where; these are cleared at the start of every program
+            bytes: If recorded, gives last 4 motor indexes. These are cleared at the start of every program.
                    Otherwise, current index of selected motor.
         """
         # command to query recorded positions is just lower case of current
@@ -582,7 +582,7 @@ class VMX:
 
     @MandateImmediate()
     def lst(self) -> bytes:
-        """`lst` will list out current program.
+        """`lst` will list out the current program.
 
         Anything outside of motor commands is not stored in a program.
 
@@ -595,7 +595,7 @@ class VMX:
 
     @MandateImmediate(False)
     def move(self, idx: int, motor: Motor = Motor.X, relative: bool = True) -> Self:
-        """Index motor specific number of steps, or to a particular index.
+        """Index motor a specific number of steps, or to a particular index.
 
         Supports absolute and relative indexing.
 
@@ -689,7 +689,7 @@ class VMX:
 
     @MandateImmediate(False)
     def pause(self, time: float) -> Self:
-        """Pause program for _time_ seconds.
+        """Pause program for `time` seconds.
 
         Args:
             time (float): Time, in seconds, to pause

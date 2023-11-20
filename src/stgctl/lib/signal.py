@@ -7,7 +7,7 @@ from stgctl.core.settings import settings
 
 
 class SignalCommand(StrEnum):
-    """_Enum to hold command strings."""
+    """Enum to hold command strings."""
 
     START_AQ = settings.START_AQ_CMD
     END_AQ = settings.END_AQ_CMD
