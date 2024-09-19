@@ -226,7 +226,7 @@ class XYStage:
             logger.debug(f"Using this array of limit switch positions:\n {lsp}")
             # diff sequential rows to get coordinate distance between points
             stg_len = numpy.abs(numpy.diff(lsp, axis=0))
-            # Since we traveled on each size twice, might as well average them.
+            # Since we traveled on each side twice, might as well average them.
             # Sometimes the VMX reports a 1-10 index difference at the limit switches.
             # Just ignore anything below the mean, should catch these small glitches
             x_total_idx = numpy.mean(
@@ -260,6 +260,35 @@ class XYStage:
         self._trajectory += offset
         # Since the origin is at +X,+Y limit switches, we can only index to negative numbers
         self._trajectory = -self._trajectory
+
+    def goto(self, coord: Size, relative: bool = False, speed: int = 1500):
+        """Go to a commanded coordinate, in (X,Y) indexes.
+
+        Args:
+            coord (Size): Coordinates, in index count, to jog to.
+            relative (bool, optional): If the coordinates are relative. Defaults to False.
+            speed (int, optional): stage speed in idx/s
+        """
+        # set motor speed
+        self.VMX.clear().speed(motor=Motor.X, speed=speed).speed(
+            motor=Motor.Y, speed=speed
+        ).run().send()
+        logger.info(f"Set motor speed to {speed} idx/s")
+
+        # Go to index
+        logger.info(f"Moving to {coord}.")
+        self.VMX.clear()
+        self.VMX.move(motor=Motor.X, idx=coord.X, relative=relative)
+        self.VMX.move(motor=Motor.Y, idx=coord.Y, relative=relative)
+        self.VMX.run().send()
+        # Since any wait_for_complete can time out, wrap whole loop in try-finally
+        # We want the timeouterror to be raised and crash the script
+        try:
+            self.VMX.wait_for_complete(timeout=600)
+        except TimeoutError:
+            logger.warning(
+                "Waiting for VMX program to complete timed out. The stages could be anywhere."
+            )
 
     @property
     def limit_switch_positions(self) -> list:
