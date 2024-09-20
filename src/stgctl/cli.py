@@ -8,6 +8,7 @@ import typer
 from loguru import logger as logger
 
 from stgctl.lib.stage import XYStage
+from stgctl.schema.models import Size
 
 cli = typer.Typer()
 
@@ -98,6 +99,28 @@ def run(
             # test signal logic
             logger.info("Running signal test sequence.")
             stg.test_signal_setup()
+
+
+@stages_cli.command()
+def goto(
+    x: int = typer.Argument(..., help="The X index to move to."),
+    y: int = typer.Argument(..., help="The Y index to move to."),
+    relative: bool = typer.Option(
+        False, "--relative", "-r", help="Move relative to the current position."
+    ),
+    speed: int = typer.Option(1500, "--speed", "-s", help="Stage speed in idx/s."),
+):
+    """Move the stages to the specified X and Y indices."""
+    typer.echo(
+        f"Moving stages to X: {x}, Y: {y}, relative: {relative}, speed: {speed} idx/s"
+    )
+
+    # Initialize the XYStage instance
+    stg = XYStage()
+
+    # Call the goto method with the passed coordinates
+    coord = Size(X=x, Y=y)
+    stg.goto(coord=coord, relative=relative, speed=speed)
 
 
 @cli.command()
