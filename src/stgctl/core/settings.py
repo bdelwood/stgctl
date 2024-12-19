@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     SIGNAL_USER: str = ""
     START_AQ_CMD: str = "hostname"
     END_AQ_CMD: str = "hostname"
+    CONTINUE_AQ_CMD: str = "hostname"
 
     class Config:
         env_prefix = "STGCTL_"

@@ -9,6 +9,7 @@ from stgctl.lib.signal import Signaller
 from stgctl.lib.vmx import VMX, Motor
 from stgctl.schema.models import Size
 from stgctl.util.trajectory import gen_2d_trajectory
+import time
 
 
 class XYStage:
@@ -151,13 +152,31 @@ class XYStage:
                 self.VMX.clear()
                 self.VMX.move(motor=Motor.X, idx=coord[0], relative=False)
                 self.VMX.move(motor=Motor.Y, idx=coord[1], relative=False)
-                self.VMX.pause(time=self.observing_time)
+                # self.VMX.pause(time=self.observing_time)
                 self.VMX.run().send()
                 logger.info(
-                    f"Starting (now/total rows, now/total columns).\n \
+                    f"Starting move to (now/total rows, now/total columns).\n \
                       ({divmod(i,self.grid_size.X)[1]+1}/{self.grid_size.X},{divmod(i,self.grid_size.X)[0]+1}/{self.grid_size.Y})"
                 )
                 self.VMX.wait_for_complete(timeout=600)
+                
+                if signal:
+                    # Signal ready for start of mark
+                    logger.info("Sending start signal.")
+                    msg = self.signaller.start_aq()
+                    logger.info(f"Signal returned\n {msg.stdout}")
+
+                    logger.debug(f'Pausing for {settings.OBSERVE_TIME}s')
+                    time.sleep(settings.OBSERVE_TIME)
+
+                    # Signal continue
+                    logger.info("Sending continue signal.")
+                    msg = self.signaller.cont_aq()
+                    logger.info(f"Signal returned\n {msg.stdout}")
+                    logger.debug("Sending ready signal")
+                    # msg = self.signaller.cont_aq()
+                else:
+                    time.sleep(settings.OBSERVE_TIME)
                 logger.info("Program complete, moving to next position.")
         # Even if the rastering fails, send end signal
         finally:
@@ -193,12 +212,26 @@ class XYStage:
         self.VMX.clear()
         self.VMX.move(motor=Motor.X, idx=test_idx, relative=True)
         self.VMX.move(motor=Motor.Y, idx=test_idx, relative=True)
-        self.VMX.pause(time=self.observing_time)
         self.VMX.run().send()
+
+
         # Since any wait_for_complete can time out, wrap whole loop in try-finally
         # We want the timeouterror to be raised and crash the script
         try:
             self.VMX.wait_for_complete(timeout=600)
+            # Signal ready to mark start of raster point
+            logger.info("Sending start signal.")
+            msg = self.signaller.start_aq()
+            logger.info(f"Signal returned\n {msg.stdout}")
+
+            logger.debug(f'Pausing for {settings.OBSERVE_TIME} s')
+            time.sleep(settings.OBSERVE_TIME)
+
+            # Signal end
+            logger.info("Sending continue signal.")
+            msg = self.signaller.cont_aq()
+            logger.info(f"Signal returned\n {msg.stdout}")
+
         finally:
             # Signal end
             logger.info("Sending end signal.")
