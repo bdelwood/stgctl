@@ -11,6 +11,7 @@ class SignalCommand(StrEnum):
 
     START_AQ = settings.START_AQ_CMD
     END_AQ = settings.END_AQ_CMD
+    CONT_AQ = settings.CONTINUE_AQ_CMD
 
 
 class Signaller:
@@ -42,6 +43,14 @@ class Signaller:
             Result: result of remote command.
         """
         return self.signal(SignalCommand.END_AQ)
+
+    def cont_aq(self) -> Result:
+        """Send continue acquisition signal.
+
+        Returns:
+            Result: result of remote command.
+        """
+        return self.signal(SignalCommand.CONT_AQ)
 
     def signal(self, cmd: str) -> Result:
         """Thin wrapper around Fabric Connection.
