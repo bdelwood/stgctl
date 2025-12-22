@@ -26,6 +26,7 @@ def version_callback(value: bool):
     """
     if value:
         typer.echo(f"{__version__}")
+        raise typer.Exit()
 
 
 @stages_cli.command()
