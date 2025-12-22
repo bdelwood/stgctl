@@ -1,49 +1,59 @@
-[tool.poetry]
+[project]
 name = "stgctl"
-version = "0.6.1.dev2+efdedd8"
+dynamic = ["version"]
 description = "stage-control"
-authors = ["Brodi Elwood <bdelwood@fas.harvard.edu>"]
-license = "MIT"
+authors = [{ name = "Brodi Elwood", email = "bdelwood@fas.harvard.edu" }]
+requires-python = ">=3.11,<4"
 readme = "README.md"
-homepage = "https://github.com/bdelwood/stgctl"
-repository = "https://github.com/bdelwood/stgctl"
-documentation = "https://stgctl.readthedocs.io"
+license = "MIT"
 classifiers = ["Development Status :: 4 - Beta"]
+dependencies = [
+    "pyserial>=3.5,<4",
+    "loguru>=0.7.0,<0.8",
+    "pydantic[dotenv]>=1.10.9,<2",
+    "numpy>=1.25.0,<2",
+    "fabric>=3.1.0,<4",
+    "typer>=0.20.0,<0.21",
+]
 
-[tool.poetry.urls]
+[project.urls]
+Homepage = "https://github.com/bdelwood/stgctl"
+Repository = "https://github.com/bdelwood/stgctl"
+Documentation = "https://stgctl.readthedocs.io"
 Changelog = "https://github.com/bdelwood/stgctl/releases"
 
-[tool.poetry.dependencies]
-python = "^3.11"
-pyserial = "^3.5"
-loguru = "^0.7.0"
-pydantic = { extras = ["dotenv"], version = "^1.10.9" }
-numpy = "^1.25.0"
-fabric = "^3.1.0"
-typer = "^0.20.0"
-
-[tool.poetry.scripts]
+[project.scripts]
 stgctl = "stgctl.__main__:main"
 
-[tool.poetry.group.dev.dependencies]
-Pygments = ">=2.10.0"
-bandit = ">=1.7.4"
-coverage = { extras = ["toml"], version = ">=6.2" }
-furo = ">=2021.11.12"
-mypy = ">=0.930"
-pre-commit = ">=2.16.0"
-pre-commit-hooks = ">=4.1.0"
-pytest = ">=6.2.5"
-safety = ">=1.10.3"
-sphinx = ">=4.3.2"
-sphinx-autobuild = ">=2021.3.14"
-sphinx-click = ">=3.0.2"
-typeguard = ">=2.13.3"
-xdoctest = { extras = ["colors"], version = ">=0.15.10" }
-myst-parser = { version = ">=0.16.1" }
-pytest-mock = "^3.11.1"
-ruff = "~0.1.0"
-darglint2 = "^1.8.2"
+[dependency-groups]
+dev = [
+    "Pygments>=2.10.0",
+    "bandit>=1.7.4",
+    "coverage[toml]>=6.2",
+    "furo>=2021.11.12",
+    "mypy>=0.930",
+    "pre-commit>=2.16.0",
+    "pre-commit-hooks>=4.1.0",
+    "pytest>=6.2.5",
+    "safety>=1.10.3",
+    "sphinx>=4.3.2",
+    "sphinx-autobuild>=2021.3.14",
+    "sphinx-click>=3.0.2",
+    "typeguard>=2.13.3",
+    "xdoctest[colors]>=0.15.10",
+    "myst-parser>=0.16.1",
+    "pytest-mock>=3.11.1,<4",
+    "ruff~=0.1.0",
+    "darglint2>=1.8.2,<2",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch]
+version.source = "vcs"
+build.hooks.vcs.version-file = "src/stgctl/_version.py"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -63,10 +73,6 @@ warn_unreachable = true
 pretty = true
 show_column_numbers = true
 show_error_context = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 target-version = "py39"

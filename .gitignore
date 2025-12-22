@@ -150,3 +150,7 @@ __azurite_db*__.json
 
 # Docker/DevOps configs/artifacts
 docker-compose.override.yaml
+
+
+# hatch dynamic versioning
+_version.py
