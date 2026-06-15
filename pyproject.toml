@@ -19,7 +19,7 @@ dependencies = [
     "pydantic-settings>=2",
     "numpy>=2",
     "fabric>=3.2,<4",
-    "typer>=0.20.0,<0.21",
+    "cyclopts>=4",
 ]
 
 [project.urls]
@@ -48,7 +48,6 @@ dev = [
     "sphinx>=7",
     "furo>=2024",
     "myst-parser>=3",
-    "sphinx-click>=3",
     "sphinx-autobuild>=2024",
 ]
 
@@ -95,7 +94,7 @@ fail_under = 100
 typeCheckingMode = "basic"
 
 [tool.pyrefly]
-project-excludes = ["**/.venv*"]
+project-excludes = ["**/.venv*", "**/.nox*"]
 ignore-missing-imports = ["serial.*", "fabric.*", "invoke.*"]
 
 [tool.ruff]

@@ -1,79 +1,60 @@
 """Command line interface for stgctl."""
 
 import json
-from importlib import metadata
-from typing import Annotated
+from typing import Annotated, Literal
 
-import typer
-from loguru import logger as logger
+from cyclopts import App, Parameter
+from loguru import logger
 
 from stgctl.lib.stage import XYStage
 from stgctl.schema.models import Size
 
-cli = typer.Typer()
+cli = App(
+    name="stgctl",
+    help="Control software for a pair of Velmex XY stages.",
+)
 
-stages_cli = typer.Typer()
-
-
-__version__ = metadata.version(__package__)
-
-
-def version_callback(value: bool):
-    """Print version information.
-
-    Args:
-        value (bool): typer expects callback to accept bool
-
-    Raises:
-        typer.Exit: exits the program after printing the version
-    """
-    if value:
-        typer.echo(f"{__version__}")
-        raise typer.Exit()
+stages_cli = App(name="stages", help="Run sequences.")
+cli.command(stages_cli)
 
 
-@stages_cli.command()
+def validate_run(**kwargs: object) -> None:
+    """Reject option/sequence combinations that don't make sense together."""
+    sequence = kwargs["sequence"]
+    if kwargs.get("no_signal") and sequence != "raster":
+        raise ValueError("--no-signal is only applicable with the 'raster' sequence.")
+    if kwargs.get("save_ls_posns") and sequence != "startup":
+        raise ValueError(
+            "--save-ls-posns is only applicable with the 'startup' sequence."
+        )
+    if kwargs.get("use_saved") and sequence != "raster":
+        raise ValueError("--use-saved is only applicable with the 'raster' sequence.")
+
+
+@stages_cli.command(validator=validate_run)
 def run(
-    sequence: str = typer.Argument(
-        ..., help="The sequence to run: 'startup', 'raster', 'home', or 'test-signal'."
-    ),
-    no_signal: bool = typer.Option(
-        False, "--no-signal", help="Run raster without signal."
-    ),
-    save_ls_posns: bool = typer.Option(
-        False, "--save-ls-posns", help="Save limit switch positions after startup."
-    ),
-    use_saved: bool = typer.Option(
-        False,
-        "--use-saved",
-        help="Use saved limit switch positions. Must be in proper format.",
-    ),
-):
-    """Run stage sequences.
-
-    Valid sequences: 'startup', 'raster', 'home', or 'test-signal'."
-    """
-    if sequence not in ["startup", "raster", "home", "test-signal"]:
-        raise typer.BadParameter(
-            "Invalid sequence. Must be one of 'startup', 'raster', 'home', or 'test-signal'."
-        )
-
-    if no_signal and sequence != "raster":
-        raise typer.BadParameter(
-            "--no-signal option is only applicable with 'raster' sequence."
-        )
-
-    if save_ls_posns and sequence != "startup":
-        raise typer.BadParameter(
-            "--save-ls-posns option is only applicable with 'startup' sequence."
-        )
-
-    if use_saved and sequence != "raster":
-        raise typer.BadParameter(
-            "--use-saved option is only applicable with 'raster' sequence."
-        )
-
-    typer.echo(f"Running {sequence} sequence.")
+    sequence: Annotated[
+        Literal["startup", "raster", "home", "test-signal"],
+        Parameter(help="The sequence to run."),
+    ],
+    *,
+    no_signal: Annotated[
+        bool, Parameter(help="Run raster without signal.", negative=())
+    ] = False,
+    save_ls_posns: Annotated[
+        bool,
+        Parameter(help="Save limit switch positions after startup.", negative=()),
+    ] = False,
+    use_saved: Annotated[
+        bool,
+        Parameter(
+            help="Use saved limit switch positions. Must be in proper format.",
+            negative=(),
+        ),
+    ] = False,
+) -> None:
+    """Run stage sequences."""
+    cli.console.print(f"Running {sequence} sequence.")
 
     logger.info("Initializing stages.")
     stg = XYStage()
@@ -105,17 +86,25 @@ def run(
             stg.test_signal_setup()
 
 
-@stages_cli.command()
+@stages_cli.command
 def goto(
-    x: int = typer.Argument(..., help="The X index to move to."),
-    y: int = typer.Argument(..., help="The Y index to move to."),
-    relative: bool = typer.Option(
-        False, "--relative", "-r", help="Move relative to the current position."
-    ),
-    speed: int = typer.Option(1500, "--speed", "-s", help="Stage speed in idx/s."),
-):
+    x: Annotated[int, Parameter(help="The X index to move to.")],
+    y: Annotated[int, Parameter(help="The Y index to move to.")],
+    *,
+    relative: Annotated[
+        bool,
+        Parameter(
+            name=["--relative", "-r"],
+            help="Move relative to the current position.",
+            negative=(),
+        ),
+    ] = False,
+    speed: Annotated[
+        int, Parameter(name=["--speed", "-s"], help="Stage speed in idx/s.")
+    ] = 1500,
+) -> None:
     """Move the stages to the specified X and Y indices."""
-    typer.echo(
+    cli.console.print(
         f"Moving stages to X: {x}, Y: {y}, relative: {relative}, speed: {speed} idx/s"
     )
 
@@ -127,24 +116,7 @@ def goto(
     stg.goto(coord=coord, relative=relative, speed=speed)
 
 
-@cli.command()
-def vmx():
+@cli.command
+def vmx() -> None:
     """Subcommand for controlling VMX directly."""
     raise NotImplementedError("VMX command line interface not implemented yet.")
-
-
-@cli.callback(invoke_without_command=True)
-def main(
-    version: Annotated[
-        bool | None,
-        typer.Option("--version", callback=version_callback, is_eager=True),
-    ] = None,
-):
-    """Callback for main function to allow --version option without any subcommands."""
-
-
-# adding subcommand under stages
-cli.add_typer(stages_cli, name="stages", help="Run sequences.")
-
-# click object for docs
-typer_click_object = typer.main.get_command(cli)
