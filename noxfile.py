@@ -7,7 +7,7 @@ from pathlib import Path
 import nox
 
 package = "stgctl"
-python_versions = ["3.11", "3.12"]
+python_versions = ["3.11", "3.12", "3.13"]
 nox.needs_version = ">= 2024.3.2"
 nox.options.sessions = (
     "pre-commit",

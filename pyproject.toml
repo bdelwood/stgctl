@@ -3,7 +3,7 @@ name = "stgctl"
 dynamic = ["version"]
 description = "stage-control"
 authors = [{ name = "Brodi Elwood", email = "bdelwood@fas.harvard.edu" }]
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11"
 readme = "README.md"
 license = "MIT"
 classifiers = [
@@ -17,8 +17,8 @@ dependencies = [
     "loguru>=0.7.0,<0.8",
     "pydantic>=2.7",
     "pydantic-settings>=2",
-    "numpy>=1.25.0,<2",
-    "fabric>=3.1.0,<4",
+    "numpy>=2",
+    "fabric>=3.2,<4",
     "typer>=0.20.0,<0.21",
 ]
 

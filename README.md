@@ -13,7 +13,7 @@
   https://img.shields.io/github/v/tag/bdelwood/stgctl?sort=semver&style=flat-square&label=version
 [version-url]: https://github.com/bdelwood/stgctl/tags
 [python-img]:
-  https://img.shields.io/badge/python-3.11%20%7C%203.12-blue?style=flat-square
+  https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?style=flat-square
 [license-img]: https://img.shields.io/badge/license-MIT-yellow?style=flat-square
 [license-url]: https://github.com/bdelwood/stgctl/blob/master/LICENSE
 
