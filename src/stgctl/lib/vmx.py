@@ -249,7 +249,7 @@ class VMX:
     PROG_COMPLETE: str = "^"
 
     def __init__(self, port: str | None = None) -> None:
-        logger.debug(f"Using settings:\n{pformat(settings.dict())}")
+        logger.debug(f"Using settings:\n{pformat(settings.model_dump())}")
         if not port:
             # grep for serial ports using regex provided in settings
             matched_serial_ports = grep_serial_ports(settings.VMX_DEVICE_REGEX)

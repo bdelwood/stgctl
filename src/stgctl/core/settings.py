@@ -7,7 +7,8 @@ from pathlib import Path
 from re import Pattern
 
 from loguru import logger
-from pydantic import BaseSettings
+from pydantic import AliasChoices, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Logger that logs to file
 log_path = Path("./logs") / Path(
@@ -38,9 +39,22 @@ atexit.register(functools.partial(delete_empty_logs, log_file=log_path))
 class Settings(BaseSettings):
     """Read settings from env."""
 
+    model_config = SettingsConfigDict(
+        env_prefix="STGCTL_",
+        validate_assignment=True,
+        validate_default=True,
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
     VMX_DEVICE_PORT: str = ""
     VMX_DEVICE_REGEX: str | Pattern[str] = "USB-to-Serial"
-    LOGURU_LEVEL: str = "DEBUG"
+    # We use LOGURU_LEVEL internally, but STGCTL_LOG_LEVEL in the .env
+    LOGURU_LEVEL: str = Field(
+        default="DEBUG",
+        validation_alias=AliasChoices("STGCTL_LOG_LEVEL"),
+    )
     GRID_SIZE: tuple[int, int] = (60, 60)
     STEP_SIZE: tuple[int, int] | None = None
     OBSERVE_TIME: int = 15
@@ -49,15 +63,6 @@ class Settings(BaseSettings):
     START_AQ_CMD: str = "hostname"
     END_AQ_CMD: str = "hostname"
     CONTINUE_AQ_CMD: str = "hostname"
-
-    class Config:
-        env_prefix = "STGCTL_"
-        validate_assignment = True
-        validate_all = True
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        # We use LOGURU_LEVEL internally, but STGCTL_LOG_LEVEL in the .env
-        fields = {"LOGURU_LEVEL": {"env": ["STGCTL_LOG_LEVEL"]}}
 
 
 settings = Settings()
