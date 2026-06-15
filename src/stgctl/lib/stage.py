@@ -1,32 +1,34 @@
 """Class to provide quick API for controlling two Velmex stages."""
 
 import json
+import time
 
 import numpy
 from loguru import logger
+
 from stgctl.core.settings import settings
 from stgctl.lib.signal import Signaller
 from stgctl.lib.vmx import VMX, Motor
 from stgctl.schema.models import Size
 from stgctl.util.trajectory import gen_2d_trajectory
-import time
 
 
 class XYStage:
-    """Abstraction over VMX class. Useful for controlling XY stages."""
+    """Abstraction over VMX class. Useful for controlling XY stages.
+
+    On initialization, sets up the VMX, grid size, step size, observing time, and
+    signaller based on the values specified in the .env settings.
+
+    The VMX provides an interface for controlling Velmex stepper motors, and is used
+    here to control the motion of the XY stage. The grid size and step size define the
+    motion parameters for the stage, and the observing time defines the time the stage
+    spends at each grid point.
+
+    The signaller is used to communicate with a remote host for controlling the data
+    acquisition process.
+    """
 
     def __init__(self):
-        """Initialize an instance of XYStage.
-
-        This involves setting up the VMX, grid size, step size, observing time, and signaller based on
-        the values specified in the .env settings.
-
-        The VMX provides an interface for controlling Velmex stepper motors, and
-        is used here to control the motion of the XY stage. The grid size and step size define the motion parameters
-        for the stage, and the observing time defines the time the stage spends at each grid point.
-
-        The signaller is used to communicate with a remote host for controlling the data acquisition process.
-        """
         # Initialize VMX device
         self.VMX = VMX(port=settings.VMX_DEVICE_PORT)
         self._limit_switch_positions = None
@@ -156,17 +158,17 @@ class XYStage:
                 self.VMX.run().send()
                 logger.info(
                     f"Starting move to (now/total rows, now/total columns).\n \
-                      ({divmod(i,self.grid_size.X)[1]+1}/{self.grid_size.X},{divmod(i,self.grid_size.X)[0]+1}/{self.grid_size.Y})"
+                      ({divmod(i, self.grid_size.X)[1] + 1}/{self.grid_size.X},{divmod(i, self.grid_size.X)[0] + 1}/{self.grid_size.Y})"
                 )
                 self.VMX.wait_for_complete(timeout=600)
-                
+
                 if signal:
                     # Signal ready for start of mark
                     logger.info("Sending start signal.")
                     msg = self.signaller.start_aq()
                     logger.info(f"Signal returned\n {msg.stdout}")
 
-                    logger.debug(f'Pausing for {settings.OBSERVE_TIME}s')
+                    logger.debug(f"Pausing for {settings.OBSERVE_TIME}s")
                     time.sleep(settings.OBSERVE_TIME)
 
                     # Signal continue
@@ -214,7 +216,6 @@ class XYStage:
         self.VMX.move(motor=Motor.Y, idx=test_idx, relative=True)
         self.VMX.run().send()
 
-
         # Since any wait_for_complete can time out, wrap whole loop in try-finally
         # We want the timeouterror to be raised and crash the script
         try:
@@ -224,7 +225,7 @@ class XYStage:
             msg = self.signaller.start_aq()
             logger.info(f"Signal returned\n {msg.stdout}")
 
-            logger.debug(f'Pausing for {settings.OBSERVE_TIME} s')
+            logger.debug(f"Pausing for {settings.OBSERVE_TIME} s")
             time.sleep(settings.OBSERVE_TIME)
 
             # Signal end

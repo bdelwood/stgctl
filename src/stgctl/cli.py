@@ -2,7 +2,7 @@
 
 import json
 from importlib import metadata
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from loguru import logger as logger
@@ -23,6 +23,9 @@ def version_callback(value: bool):
 
     Args:
         value (bool): typer expects callback to accept bool
+
+    Raises:
+        typer.Exit: exits the program after printing the version
     """
     if value:
         typer.echo(f"{__version__}")
@@ -79,7 +82,7 @@ def run(
     match sequence:
         case "startup":
             # startup logic
-            logger.info("Running startup squence.")
+            logger.info("Running startup sequence.")
             stg.startup(save=save_ls_posns)
         case "raster":
             # rastering logic
@@ -133,12 +136,11 @@ def vmx():
 @cli.callback(invoke_without_command=True)
 def main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option("--version", callback=version_callback, is_eager=True),
     ] = None,
 ):
     """Callback for main function to allow --version option without any subcommands."""
-    pass
 
 
 # adding subcommand under stages

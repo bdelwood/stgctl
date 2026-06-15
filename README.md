@@ -1,30 +1,32 @@
 # stage-control
 
-[![PyPI](https://img.shields.io/github/v/tag/bdelwood/stgctl?sort=semver)][gh_tag]
-[![License](https://img.shields.io/github/license/bdelwood/stgctl)][license]
+[![CI status][ci-img]][ci-url] [![Documentation][doc-img]][doc-url]
+[![Version][version-img]][version-url] [![Python][python-img]][version-url]
+[![License][license-img]][license-url]
 
-[![Read the documentation at https://stgctl.readthedocs.io/](https://img.shields.io/readthedocs/stgctl/latest.svg?label=Read%20the%20Docs)][read the docs]
-[![Codecov](https://codecov.io/gh/bdelwood/stgctl/branch/main/graph/badge.svg)][codecov]
+[ci-img]:
+  https://img.shields.io/github/actions/workflow/status/bdelwood/stgctl/ci.yml?branch=master&style=flat-square&label=CI
+[ci-url]: https://github.com/bdelwood/stgctl/actions/workflows/ci.yml
+[doc-img]: https://img.shields.io/badge/docs-stgctl-4d76ae?style=flat-square
+[doc-url]: https://bdelwood.github.io/stgctl/
+[version-img]:
+  https://img.shields.io/github/v/tag/bdelwood/stgctl?sort=semver&style=flat-square&label=version
+[version-url]: https://github.com/bdelwood/stgctl/tags
+[python-img]:
+  https://img.shields.io/badge/python-3.11%20%7C%203.12-blue?style=flat-square
+[license-img]: https://img.shields.io/badge/license-MIT-yellow?style=flat-square
+[license-url]: https://github.com/bdelwood/stgctl/blob/master/LICENSE
 
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
-[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
-
-[pypi status]: https://pypi.org/project/stgctl/
-[gh_tag]: https://github.com/bdelwood/stgctl/tags
-[read the docs]: https://stgctl.readthedocs.io/
-[tests]: https://github.com/bdelwood/stgctl/actions?workflow=Tests
-[codecov]: https://app.codecov.io/gh/bdelwood/stgctl
-[pre-commit]: https://github.com/pre-commit/pre-commit
-[black]: https://github.com/psf/black
+Control software for a pair of Velmex XY stages over serial.
 
 ## Installation
 
-You can install _stage-control_ via [pip] from [PyPI]:
+Clone the repository and install with [uv]:
 
 ```console
 $ git clone https://github.com/bdelwood/stgctl.git
 $ cd stgctl
-$ poetry install
+$ uv sync
 ```
 
 ## Usage
@@ -33,20 +35,17 @@ Please see the [Command-line Reference] for details.
 
 ## License
 
-Distributed under the terms of the [MIT license][license],
-_stage-control_ is free and open source software.
+Distributed under the terms of the [MIT license][license-url], _stage-control_
+is free and open source software.
 
 ## Issues
 
-If you encounter any problems,
-please [file an issue] along with a detailed description.
+If you encounter any problems, please [file an issue] along with a detailed
+description.
 
-[pypi]: https://pypi.org/
+[uv]: https://docs.astral.sh/uv/
 [file an issue]: https://github.com/bdelwood/stgctl/issues
-[pip]: https://pip.pypa.io/
 
 <!-- github-only -->
 
-[license]: https://github.com/bdelwood/stgctl/blob/master/LICENSE
-[contributor guide]: https://github.com/bdelwood/stgctl/blob/main/CONTRIBUTING.md
-[command-line reference]: https://stgctl.readthedocs.io/en/latest/usage.html
+[command-line reference]: https://bdelwood.github.io/stgctl/usage.html

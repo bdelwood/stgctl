@@ -1,6 +1,7 @@
 """Functions for generating a 2D trajectory."""
 
 import numpy
+
 from stgctl.schema.models import Size
 
 grid_size = 60

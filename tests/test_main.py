@@ -1,7 +1,9 @@
 """Test cases for the __main__ module."""
+
 import pytest
-from stgctl.cli import cli
 from typer.testing import CliRunner
+
+from stgctl.cli import cli
 
 
 @pytest.fixture

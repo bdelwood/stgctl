@@ -1,13 +1,15 @@
 """Tests for VMX lib"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
 from serial import Serial
 from serial.tools.list_ports_common import ListPortInfo
+
 from stgctl.lib.vmx import VMX
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_serial(mocker):
     # Create and return mock serial connection
     mock_serial = MagicMock(spec=Serial)

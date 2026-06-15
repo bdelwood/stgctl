@@ -1,4 +1,5 @@
 """Sphinx configuration."""
+
 project = "stage-control"
 author = "Brodi Elwood"
 copyright = "2023, Brodi Elwood"

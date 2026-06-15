@@ -3,6 +3,7 @@
 from enum import StrEnum
 
 from fabric import Connection, Result
+
 from stgctl.core.settings import settings
 
 
@@ -15,15 +16,14 @@ class SignalCommand(StrEnum):
 
 
 class Signaller:
-    """The Signaller class communicates with a remote host for controlling the data acquisition process."""
+    """Communicate with a remote host for controlling the data acquisition process.
+
+    Args:
+        host (str): remote host to execute commands on
+        user (str | None, optional): User for remote connection. Defaults to None.
+    """
 
     def __init__(self, host: str, user: str | None = None) -> None:
-        """Initialize Singaller instance.
-
-        Args:
-            host (str): remote host to execute commands on
-            user (str | None, optional): User for remote connection. Defaults to None.
-        """
         self.connection = Connection(host, user)
 
     def start_aq(self) -> Result:

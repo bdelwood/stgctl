@@ -1,4 +1,5 @@
 """Class for VMX motor controller."""
+
 import functools
 import time
 from collections.abc import Callable
@@ -8,6 +9,7 @@ from typing import Any, Self, TypeVar
 
 import serial
 from loguru import logger
+
 from stgctl.core.settings import settings
 from stgctl.lib.exceptions import (
     InvalidVMXCommandError,
@@ -30,16 +32,15 @@ T = TypeVar("T")
 
 
 class MandateImmediate:
-    """Decorator class for commands that should be executed immediately."""
+    """Decorator class for commands that should be executed immediately.
+
+    Args:
+        immediate (bool):
+            If True, the command must be executed immediately,
+            if False, the command can be queued for later send. (default: True).
+    """
 
     def __init__(self, immediate: bool = True) -> None:
-        """Initialize MandateImmediate.
-
-        Args:
-            immediate (bool):
-                If True, the command must be executed immediately,
-                if False, the command can be queued for later send. (default: True).
-        """
         self.immediate: bool = immediate
 
     def __call__(self, func: Callable[..., T]) -> Callable[..., T]:
@@ -69,38 +70,36 @@ class MandateImmediate:
                 return instance._readall()
 
             return wrapper
-        else:
-            # When immediate=False, use this wrapper
-            # which corresponds to methods that can be queued (and method chained)
-            # these methods also support sending "now", which behaves similarly to above
-            @functools.wraps(func)
-            def wrapper(
-                instance: Any, now: bool = False, *args: Any, **kwargs: Any
-            ) -> T | None:
-                if now:
-                    # see above wrapper comments.
-                    instance._reset()
-                    instance._serial.reset_input_buffer()
-                    func(instance, *args, **kwargs)
-                    instance.send()
 
-                    return instance._readall()
-                else:
-                    # if not now, just return the called method (ie self)
-                    return func(instance, *args, **kwargs)
+        # When immediate=False, use this wrapper
+        # which corresponds to methods that can be queued (and method chained)
+        # these methods also support sending "now", which behaves similarly to above
+        @functools.wraps(func)
+        def wrapper(
+            instance: Any, now: bool = False, *args: Any, **kwargs: Any
+        ) -> T | None:
+            if now:
+                # see above wrapper comments.
+                instance._reset()
+                instance._serial.reset_input_buffer()
+                func(instance, *args, **kwargs)
+                instance.send()
 
-            return wrapper
+                return instance._readall()
+            # if not now, just return the called method (ie self)
+            return func(instance, *args, **kwargs)
+
+        return wrapper
 
 
 class Command:
-    """A decorator class to create factory method for categorizing commands."""
+    """A decorator class to create factory method for categorizing commands.
+
+    Args:
+        cmd_type (str): category of command that method falls under
+    """
 
     def __init__(self, cmd_type: str) -> None:
-        """Initialize Command instance.
-
-        Args:
-            cmd_type (str): category of command that method falls under
-        """
         self.cmd_type = cmd_type
 
     def __call__(self, func: Callable[..., T]) -> Callable[..., T]:
@@ -197,7 +196,15 @@ class SerialCommand(list):
 
 
 class VMX:
-    """Class for VMX motor controller."""
+    """Class for VMX motor controller.
+
+    Args:
+        port (str | None, optional): The port on which the motor controller is
+            connected. If not provided, the port will be determined automatically.
+
+    Raises:
+        VmxNotReadyError: Returns error if VMX does not send ready response
+    """
 
     # ImMx
     # x pos or neg
@@ -241,15 +248,7 @@ class VMX:
 
     PROG_COMPLETE: str = "^"
 
-    def __init__(self, port=None) -> None:
-        """Initialize a VMX instance.
-
-        Args:
-            port (str, optional): The port on which the motor controller is connected. If not provided, the port will be determined automatically.
-
-        Raises:
-            VmxNotReadyError: Returns error if VMX does not send ready response
-        """
+    def __init__(self, port: str | None = None) -> None:
         logger.debug(f"Using settings:\n{pformat(settings.dict())}")
         if not port:
             # grep for serial ports using regex provided in settings
@@ -478,7 +477,7 @@ class VMX:
 
         Returns:
             bytes: The current echo mode setting if echo_state is not given, or an acknowledgement of setting echo mode if it is.
-        """  # noqa: DAR202
+        """
         if echo_state:
             self.op_cmd("F")
         else:
@@ -565,7 +564,7 @@ class VMX:
         return False
 
     @MandateImmediate()
-    def posn(self, axis: Motor = Motor.X, recorded=False) -> bytes:
+    def posn(self, axis: Motor = Motor.X, recorded: bool = False) -> bytes:
         """Queries motor position for a particular axis.
 
         Args:
@@ -664,7 +663,7 @@ class VMX:
             motor (Motor): Motor to zero index. Defaults to Motor.X.
 
         Returns:
-            Self: VMX wirh appended command.
+            Self: VMX with appended command.
         """
         self._cmd.append(VMX.SET_ABS_ZERO.format(m=motor))
         return self

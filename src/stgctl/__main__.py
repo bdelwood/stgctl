@@ -1,4 +1,5 @@
 """Main."""
+
 from stgctl.cli import cli
 
 

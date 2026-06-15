@@ -1,61 +1,74 @@
+ci:
+  autoupdate_commit_msg: "chore: update pre-commit hooks"
+  autofix_commit_msg: "style: pre-commit fixes"
+
 repos:
-  - repo: local
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v5.0.0"
     hooks:
-      - id: bandit
-        name: bandit
-        entry: bandit
-        language: system
-        types: [python]
-        require_serial: true
-        args: ["-c", "bandit.yml"]
-      - id: ruff-format
-        name: ruff formatting
-        entry: ruff
-        language: system
-        types: [python]
-        require_serial: true
-        args: [format]
       - id: check-added-large-files
-        name: Check for added large files
-        entry: check-added-large-files
-        language: system
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
       - id: check-toml
-        name: Check Toml
-        entry: check-toml
-        language: system
-        types: [toml]
       - id: check-yaml
-        name: Check Yaml
-        entry: check-yaml
-        language: system
-        types: [yaml]
-      # only run when run manually (cli or nox)
-      - id: darglint2
-        name: darglint2
-        entry: darglint2
-        language: system
-        types: [python]
-        stages: [manual]
+      - id: debug-statements
       - id: end-of-file-fixer
-        name: Fix End of Files
-        entry: end-of-file-fixer
-        language: system
-        types: [text]
-        stages: [commit, push, manual]
-      - id: ruff-lint
-        name: ruff linting
-        entry: ruff
-        language: system
-        types: [python]
-        require_serial: true
-        args: [--fix, --exit-non-zero-on-fix]
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
       - id: trailing-whitespace
-        name: Trim Trailing Whitespace
-        entry: trailing-whitespace-fixer
-        language: system
-        types: [text]
-        stages: [commit, push, manual]
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.6.0
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: "v3.5.3"
     hooks:
       - id: prettier
+        types_or: [yaml, markdown, html, css, scss, javascript, json]
+        args: [--prose-wrap=always]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.11.10"
+    hooks:
+      - id: ruff
+        args: ["--fix", "--show-fixes"]
+      - id: ruff-format
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: "0.7.12"
+    hooks:
+      - id: uv-lock
+
+  - repo: https://github.com/jsh9/pydoclint
+    rev: "0.6.7"
+    hooks:
+      - id: pydoclint
+        args:
+          [
+            --style=google,
+            --check-return-types=False,
+            --check-class-attributes=False,
+          ]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: "v2.4.1"
+    hooks:
+      - id: codespell
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: "v0.10.0.1"
+    hooks:
+      - id: shellcheck
+
+  - repo: local
+    hooks:
+      - id: disallow-caps
+        name: Disallow improper capitalization
+        language: pygrep
+        entry: PyBind|Numpy|Cmake|CCache|Github|PyTest
+        exclude: .pre-commit-config.yaml
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: "v0.24.1"
+    hooks:
+      - id: validate-pyproject
+        additional_dependencies: ["validate-pyproject-schema-store[all]"]
