@@ -32,6 +32,8 @@ def validate_run(**kwargs: object) -> None:
         raise ValueError("--use-saved is only applicable with raster sequences.")
     if kwargs.get("dry_run") and sequence not in raster_sequences:
         raise ValueError("--dry-run is only applicable with raster sequences.")
+    if kwargs.get("dry_run") and kwargs.get("use_saved"):
+        raise ValueError("--dry-run uses simulated dimensions, not saved positions.")
 
 
 @stages_cli.command(validator=validate_run)
@@ -78,12 +80,13 @@ def run(
         case "raster" | "continuous-raster":
             # rastering logic
             logger.info(f"Entering {sequence} mode.")
-            if use_saved or dry_run:
+            if dry_run:
+                logger.info("Using simulated stage dimensions.")
+            elif use_saved:
                 logger.info("Loading limit switch positions.")
                 with open("limit_switch_positions.json") as f:
                     stg.limit_switch_positions = json.load(f)
-                if not dry_run:
-                    stg.home()
+                stg.home()
             else:
                 stg.startup()
             if sequence == "raster":

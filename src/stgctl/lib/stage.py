@@ -32,12 +32,22 @@ class XYStage:
             signaling. Defaults to False.
     """
 
+    DRY_RUN_LIMIT_SWITCH_POSITIONS = (
+        (0, 0),
+        (0, -10_000),
+        (-10_000, -10_000),
+        (-10_000, 0),
+        (0, 0),
+    )
+
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
         if not dry_run:
             # Initialize VMX device
             self.VMX = VMX(port=settings.VMX_DEVICE_PORT)
-        self._limit_switch_positions = None
+        self._limit_switch_positions = (
+            list(self.DRY_RUN_LIMIT_SWITCH_POSITIONS) if dry_run else None
+        )
         # Grab settings for rastering, gather into Size enum
         self.grid_size = Size(*settings.GRID_SIZE)
         self.step_size = (
@@ -48,12 +58,18 @@ class XYStage:
             # Set up remote command execution
             self.signaller = Signaller(settings.SIGNAL_HOST, settings.SIGNAL_USER)
 
+    def _require_hardware(self) -> None:
+        """Reject hardware-only operations during a dry run."""
+        if self.dry_run:
+            raise RuntimeError("This operation is unavailable in dry-run mode.")
+
     def startup(self, save: bool = False):
         """Run startup sequence.
 
         Homes the stages to +X,+Y limit switches.
         Records locations of limit switches.
         """
+        self._require_hardware()
         logger.info(
             "Sending stages to the four limit switches to get index counts for raster."
         )
@@ -104,6 +120,7 @@ class XYStage:
 
         Indexes to positive limit switches. Once there, sets it as the origin.
         """
+        self._require_hardware()
         logger.info("Sending stages to positive limit switches.")
         self.VMX.clear().speed(motor=Motor.X, speed=2000).speed(
             motor=Motor.Y, speed=2000
@@ -276,6 +293,7 @@ class XYStage:
 
         Useful for ensuring signalling behaves as expected.
         """
+        self._require_hardware()
         self.home()
 
         # set motor speed
@@ -385,6 +403,7 @@ class XYStage:
             relative (bool, optional): If the coordinates are relative. Defaults to False.
             speed (int, optional): stage speed in idx/s
         """
+        self._require_hardware()
         # set motor speed
         self.VMX.clear().speed(motor=Motor.X, speed=speed).speed(
             motor=Motor.Y, speed=speed
