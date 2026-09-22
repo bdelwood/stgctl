@@ -10,7 +10,7 @@ from stgctl.core.settings import settings
 from stgctl.lib.signal import Signaller
 from stgctl.lib.vmx import VMX, Motor
 from stgctl.schema.models import Size
-from stgctl.util.trajectory import gen_2d_trajectory
+from stgctl.util.trajectory import gen_2d_trajectory, plot_trajectory
 
 
 class XYStage:
@@ -26,11 +26,17 @@ class XYStage:
 
     The signaller is used to communicate with a remote host for controlling the data
     acquisition process.
+
+    Args:
+        dry_run (bool): Plot raster trajectories without initializing hardware or
+            signaling. Defaults to False.
     """
 
-    def __init__(self):
-        # Initialize VMX device
-        self.VMX = VMX(port=settings.VMX_DEVICE_PORT)
+    def __init__(self, dry_run: bool = False):
+        self.dry_run = dry_run
+        if not dry_run:
+            # Initialize VMX device
+            self.VMX = VMX(port=settings.VMX_DEVICE_PORT)
         self._limit_switch_positions = None
         # Grab settings for rastering, gather into Size enum
         self.grid_size = Size(*settings.GRID_SIZE)
@@ -38,8 +44,9 @@ class XYStage:
             Size(*settings.STEP_SIZE) if settings.STEP_SIZE else settings.STEP_SIZE
         )
         self.observing_time = settings.OBSERVE_TIME
-        # Set up remote command execution
-        self.signaller = Signaller(settings.SIGNAL_HOST, settings.SIGNAL_USER)
+        if not dry_run:
+            # Set up remote command execution
+            self.signaller = Signaller(settings.SIGNAL_HOST, settings.SIGNAL_USER)
 
     def startup(self, save: bool = False):
         """Run startup sequence.
@@ -128,6 +135,9 @@ class XYStage:
         """
         # Use gen_trajectory to get a trajectory (X(t), Y(t))
         self.gen_trajectory()
+        if self.dry_run:
+            plot_trajectory(self._trajectory, title="Discrete raster trajectory")
+            return
         # May want to fine-tune
         raster_idx_speed = 1500
 
@@ -188,6 +198,78 @@ class XYStage:
                 logger.debug(f"Signal returned\n {msg.stdout}")
 
         logger.info(f"Completed {self.grid_size} raster.")
+
+    def continuous_raster(self, signal: bool = True) -> None:
+        """Raster continuously across each row of the configured grid.
+
+        Acquisition runs for the entire raster. Each row traverses between the
+        first and last X coordinates generated for that row, and the Y stage
+        advances between rows.
+
+        Args:
+            signal (bool): Whether to execute acquisition signal remote commands.
+                Defaults to True.
+
+        """
+        self.gen_trajectory()
+        rows = self._trajectory.reshape(self.grid_size.Y, self.grid_size.X, 2)
+        continuous_trajectory = numpy.empty(
+            (len(rows) * 2, 2), dtype=self._trajectory.dtype
+        )
+        continuous_trajectory[0::2] = rows[:, 0]
+        continuous_trajectory[1::2] = rows[:, -1]
+        if self.dry_run:
+            plot_trajectory(continuous_trajectory, title="Continuous raster trajectory")
+            return
+        raster_idx_speed = settings.CONTINUOUS_RASTER_SPEED
+
+        logger.debug(
+            f"Setting continuous raster speed to {raster_idx_speed} for both motors."
+        )
+        self.VMX.clear().speed(motor=Motor.X, speed=raster_idx_speed).speed(
+            motor=Motor.Y, speed=raster_idx_speed
+        ).run().send()
+
+        first_coord = rows[0, 0]
+        logger.info(f"Indexing to continuous raster start at {first_coord}.")
+        self.VMX.clear().move(motor=Motor.X, idx=first_coord[0], relative=False).move(
+            motor=Motor.Y, idx=first_coord[1], relative=False
+        ).run().send()
+        self.VMX.wait_for_complete(timeout=600)
+
+        acquisition_started = False
+        try:
+            if signal:
+                logger.info("Sending start signal.")
+                msg = self.signaller.start_aq()
+                acquisition_started = True
+                logger.debug(f"Signal returned\n {msg.stdout}")
+
+            logger.info(f"Starting a continuous raster with {len(rows)} rows.")
+            for row, coordinates in enumerate(rows):
+                destination = coordinates[-1]
+                logger.info(f"Scanning row {row + 1}/{len(rows)} to {destination}.")
+                self.VMX.clear().move(
+                    motor=Motor.X, idx=destination[0], relative=False
+                ).run().send()
+                self.VMX.wait_for_complete(timeout=600)
+
+                if row + 1 < len(rows):
+                    next_coord = rows[row + 1, 0]
+                    logger.info(f"Advancing to next row at {next_coord}.")
+                    self.VMX.clear().move(
+                        motor=Motor.X, idx=next_coord[0], relative=False
+                    ).move(
+                        motor=Motor.Y, idx=next_coord[1], relative=False
+                    ).run().send()
+                    self.VMX.wait_for_complete(timeout=600)
+        finally:
+            if signal and acquisition_started:
+                logger.info("Sending end signal.")
+                msg = self.signaller.end_aq()
+                logger.debug(f"Signal returned\n {msg.stdout}")
+
+        logger.info(f"Completed continuous raster with {len(rows)} rows.")
 
     def test_signal_setup(self) -> None:
         """Moves stages to home, signals start, moves back to home, then signals end.

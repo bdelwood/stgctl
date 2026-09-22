@@ -1,6 +1,10 @@
 """Functions for generating a 2D trajectory."""
 
 import numpy
+from matplotlib import pyplot
+from matplotlib.axes import Axes
+from matplotlib.collections import LineCollection
+from matplotlib.figure import Figure
 
 from stgctl.schema.models import Size
 
@@ -57,3 +61,55 @@ def gen_2d_trajectory(grid_size: Size, step_size: Size) -> numpy.ndarray:
     """
     path = path_2d_numpy(*linear_grid(grid_size, step_size))
     return path
+
+
+def plot_trajectory(
+    trajectory: numpy.ndarray, title: str = "Stage trajectory"
+) -> tuple[Figure, Axes]:
+    """Plot a stage trajectory with points colored by execution order.
+
+    Args:
+        trajectory (numpy.ndarray): Ordered array of ``(x, y)`` coordinates.
+        title (str): Plot title. Defaults to ``"Stage trajectory"``.
+
+    Returns:
+        tuple[Figure, Axes]: Matplotlib figure and axes containing the plot.
+
+    Raises:
+        ValueError: If the trajectory does not contain any coordinates.
+    """
+    if len(trajectory) == 0:
+        raise ValueError("Cannot plot an empty trajectory.")
+
+    point_order = numpy.arange(len(trajectory))
+    figure, axes = pyplot.subplots()
+    if len(trajectory) > 1:
+        points = trajectory.reshape(-1, 1, 2)
+        segments = numpy.concatenate([points[:-1], points[1:]], axis=1)
+        lines = LineCollection(
+            segments,
+            array=point_order[:-1],
+            cmap="viridis",
+            linewidth=2,
+            zorder=1,
+        )
+        axes.add_collection(lines)
+    points = axes.scatter(
+        trajectory[:, 0],
+        trajectory[:, 1],
+        c=point_order,
+        cmap="viridis",
+        zorder=2,
+    )
+    axes.autoscale()
+    figure.colorbar(points, ax=axes, label="Execution order")
+    axes.set(
+        title=title,
+        xlabel="X position (idx)",
+        ylabel="Y position (idx)",
+        aspect="equal",
+    )
+    axes.grid(alpha=0.2)
+    figure.tight_layout()
+    pyplot.show()
+    return figure, axes

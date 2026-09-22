@@ -154,3 +154,6 @@ docker-compose.override.yaml
 
 # hatch dynamic versioning
 _version.py
+
+# you are required to make your own limit switch file
+limit_switch_positions.json

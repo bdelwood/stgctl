@@ -21,20 +21,23 @@ cli.command(stages_cli)
 def validate_run(**kwargs: object) -> None:
     """Reject option/sequence combinations that don't make sense together."""
     sequence = kwargs["sequence"]
-    if kwargs.get("no_signal") and sequence != "raster":
-        raise ValueError("--no-signal is only applicable with the 'raster' sequence.")
+    raster_sequences = {"raster", "continuous-raster"}
+    if kwargs.get("no_signal") and sequence not in raster_sequences:
+        raise ValueError("--no-signal is only applicable with raster sequences.")
     if kwargs.get("save_ls_posns") and sequence != "startup":
         raise ValueError(
             "--save-ls-posns is only applicable with the 'startup' sequence."
         )
-    if kwargs.get("use_saved") and sequence != "raster":
-        raise ValueError("--use-saved is only applicable with the 'raster' sequence.")
+    if kwargs.get("use_saved") and sequence not in raster_sequences:
+        raise ValueError("--use-saved is only applicable with raster sequences.")
+    if kwargs.get("dry_run") and sequence not in raster_sequences:
+        raise ValueError("--dry-run is only applicable with raster sequences.")
 
 
 @stages_cli.command(validator=validate_run)
 def run(
     sequence: Annotated[
-        Literal["startup", "raster", "home", "test-signal"],
+        Literal["startup", "raster", "continuous-raster", "home", "test-signal"],
         Parameter(help="The sequence to run."),
     ],
     *,
@@ -52,12 +55,19 @@ def run(
             negative=(),
         ),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        Parameter(
+            help="Plot a raster trajectory without initializing hardware.",
+            negative=(),
+        ),
+    ] = False,
 ) -> None:
     """Run stage sequences."""
     cli.console.print(f"Running {sequence} sequence.")
 
     logger.info("Initializing stages.")
-    stg = XYStage()
+    stg = XYStage(dry_run=dry_run)
 
     # switch based on sequence argument
     match sequence:
@@ -65,17 +75,21 @@ def run(
             # startup logic
             logger.info("Running startup sequence.")
             stg.startup(save=save_ls_posns)
-        case "raster":
+        case "raster" | "continuous-raster":
             # rastering logic
-            logger.info("Entering rastering mode.")
-            if use_saved:
+            logger.info(f"Entering {sequence} mode.")
+            if use_saved or dry_run:
                 logger.info("Loading limit switch positions.")
                 with open("limit_switch_positions.json") as f:
                     stg.limit_switch_positions = json.load(f)
-                stg.home()
+                if not dry_run:
+                    stg.home()
             else:
                 stg.startup()
-            stg.raster(signal=not no_signal)
+            if sequence == "raster":
+                stg.raster(signal=not no_signal)
+            else:
+                stg.continuous_raster(signal=not no_signal)
         case "home":
             # homing logic
             logger.info("Entering homing mode.")

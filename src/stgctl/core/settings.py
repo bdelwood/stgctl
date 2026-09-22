@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     GRID_SIZE: tuple[int, int] = (60, 60)
     STEP_SIZE: tuple[int, int] | None = None
     OBSERVE_TIME: int = 15
+    CONTINUOUS_RASTER_SPEED: int = 800
     SIGNAL_HOST: str = "localhost"
     SIGNAL_USER: str = ""
     START_AQ_CMD: str = "hostname"
