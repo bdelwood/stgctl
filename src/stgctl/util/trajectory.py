@@ -63,6 +63,39 @@ def gen_2d_trajectory(grid_size: Size, step_size: Size) -> numpy.ndarray:
     return path
 
 
+def interleaved_row_order(row_count: int, interleave: int) -> list[int]:
+    """Order rows in alternating passes that visit every Nth row.
+
+    Args:
+        row_count (int): Total number of rows.
+        interleave (int): Distance between rows within each pass.
+
+    Returns:
+        list[int]: Row indexes in execution order.
+
+    Raises:
+        ValueError: If row count or interleave is less than one.
+    """
+    if row_count < 1:
+        raise ValueError("Row count must be at least one.")
+    if interleave < 1:
+        raise ValueError("Interleave must be at least one.")
+
+    remaining = set(range(row_count))
+    ordered_rows = []
+    direction = 1
+    while remaining:
+        start = min(remaining) if direction > 0 else max(remaining)
+        stop = row_count if direction > 0 else -1
+        for row in range(start, stop, direction * interleave):
+            if row in remaining:
+                ordered_rows.append(row)
+                remaining.remove(row)
+        direction *= -1
+
+    return ordered_rows
+
+
 def plot_trajectory(
     trajectory: numpy.ndarray, title: str = "Stage trajectory"
 ) -> tuple[Figure, Axes]:

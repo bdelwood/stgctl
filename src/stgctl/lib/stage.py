@@ -10,7 +10,11 @@ from stgctl.core.settings import settings
 from stgctl.lib.signal import Signaller
 from stgctl.lib.vmx import VMX, Motor
 from stgctl.schema.models import Size
-from stgctl.util.trajectory import gen_2d_trajectory, plot_trajectory
+from stgctl.util.trajectory import (
+    gen_2d_trajectory,
+    interleaved_row_order,
+    plot_trajectory,
+)
 
 
 class XYStage:
@@ -54,6 +58,7 @@ class XYStage:
             Size(*settings.STEP_SIZE) if settings.STEP_SIZE else settings.STEP_SIZE
         )
         self.observing_time = settings.OBSERVE_TIME
+        self.continuous_raster_interleave = settings.CONTINUOUS_RASTER_INTERLEAVE
         if not dry_run:
             # Set up remote command execution
             self.signaller = Signaller(settings.SIGNAL_HOST, settings.SIGNAL_USER)
@@ -230,13 +235,29 @@ class XYStage:
         """
         self.gen_trajectory()
         rows = self._trajectory.reshape(self.grid_size.Y, self.grid_size.X, 2)
+        row_order = interleaved_row_order(len(rows), self.continuous_raster_interleave)
         continuous_trajectory = numpy.empty(
             (len(rows) * 2, 2), dtype=self._trajectory.dtype
         )
-        continuous_trajectory[0::2] = rows[:, 0]
-        continuous_trajectory[1::2] = rows[:, -1]
+        x_edges = (rows[0, 0, 0], rows[0, -1, 0])
+        for execution_index, row_index in enumerate(row_order):
+            y_position = rows[row_index, 0, 1]
+            start_edge = execution_index % 2
+            continuous_trajectory[execution_index * 2] = (
+                x_edges[start_edge],
+                y_position,
+            )
+            continuous_trajectory[execution_index * 2 + 1] = (
+                x_edges[1 - start_edge],
+                y_position,
+            )
         if self.dry_run:
-            plot_trajectory(continuous_trajectory, title="Continuous raster trajectory")
+            title = (
+                "Continuous raster trajectory"
+                if self.continuous_raster_interleave == 1
+                else "Interleaved continuous raster trajectory"
+            )
+            plot_trajectory(continuous_trajectory, title=title)
             return
         raster_idx_speed = settings.CONTINUOUS_RASTER_SPEED
 
@@ -247,7 +268,8 @@ class XYStage:
             motor=Motor.Y, speed=raster_idx_speed
         ).run().send()
 
-        first_coord = rows[0, 0]
+        scan_rows = continuous_trajectory.reshape(len(rows), 2, 2)
+        first_coord = scan_rows[0, 0]
         logger.info(f"Indexing to continuous raster start at {first_coord}.")
         self.VMX.clear().move(motor=Motor.X, idx=first_coord[0], relative=False).move(
             motor=Motor.Y, idx=first_coord[1], relative=False
@@ -263,16 +285,20 @@ class XYStage:
                 logger.debug(f"Signal returned\n {msg.stdout}")
 
             logger.info(f"Starting a continuous raster with {len(rows)} rows.")
-            for row, coordinates in enumerate(rows):
+            for execution_index, (row_index, coordinates) in enumerate(
+                zip(row_order, scan_rows, strict=True)
+            ):
                 destination = coordinates[-1]
-                logger.info(f"Scanning row {row + 1}/{len(rows)} to {destination}.")
+                logger.info(
+                    f"Scanning grid row {row_index + 1}/{len(rows)} to {destination}."
+                )
                 self.VMX.clear().move(
                     motor=Motor.X, idx=destination[0], relative=False
                 ).run().send()
                 self.VMX.wait_for_complete(timeout=600)
 
-                if row + 1 < len(rows):
-                    next_coord = rows[row + 1, 0]
+                if execution_index + 1 < len(scan_rows):
+                    next_coord = scan_rows[execution_index + 1, 0]
                     logger.info(f"Advancing to next row at {next_coord}.")
                     self.VMX.clear().move(
                         motor=Motor.X, idx=next_coord[0], relative=False
