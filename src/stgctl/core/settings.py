@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     )
     GRID_SIZE: tuple[int, int] = (60, 60)
     STEP_SIZE: tuple[int, int] | None = None
+    HOME_SPEED: int = 2000
     OBSERVE_TIME: int = 15
     CONTINUOUS_RASTER_SPEED: int = 800
     CONTINUOUS_RASTER_INTERLEAVE: int = Field(default=1, ge=1)

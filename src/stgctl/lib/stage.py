@@ -127,8 +127,8 @@ class XYStage:
         """
         self._require_hardware()
         logger.info("Sending stages to positive limit switches.")
-        self.VMX.clear().speed(motor=Motor.X, speed=2000).speed(
-            motor=Motor.Y, speed=2000
+        self.VMX.clear().speed(motor=Motor.X, speed=settings.HOME_SPEED).speed(
+            motor=Motor.Y, speed=settings.HOME_SPEED
         ).to_limit(motor=Motor.X, pos=True).to_limit(
             motor=Motor.Y, pos=True
         ).run().send()
