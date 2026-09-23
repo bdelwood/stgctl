@@ -60,8 +60,6 @@ class MandateImmediate:
             def wrapper(instance: Any, *args: Any, **kwargs: Any) -> T | None:
                 # Take the VMX instance and reset it
                 instance._reset()
-                # Reset serial buffer so we don't get any old VMX responses
-                instance._serial.reset_input_buffer()
                 # call the decorated method, which adds single command to queue
                 func(instance, *args, **kwargs)
                 # send command
@@ -81,11 +79,12 @@ class MandateImmediate:
             if now:
                 # see above wrapper comments.
                 instance._reset()
-                instance._serial.reset_input_buffer()
                 func(instance, *args, **kwargs)
                 instance.send()
-
-                return instance._readall()
+                readout = instance._readall()
+                if instance._awaiting_completion and b"^" in readout:
+                    instance._awaiting_completion = False
+                return readout
             # if not now, just return the called method (ie self)
             return func(instance, *args, **kwargs)
 
@@ -275,6 +274,7 @@ class VMX:
         logger.debug(f"Using serial port '{port}'")
         self._serial = serial.Serial(port, timeout=0)
         self._cmd = SerialCommand()
+        self._awaiting_completion = False
         # start startup sequence.
         self.startup()
 
@@ -370,17 +370,27 @@ class VMX:
 
         Raises:
             TimeoutError: Raised when program takes longer than timeout.
+            RuntimeError: Raised when no program is awaiting completion.
         """
-        start = time.time()
-        # We want to clear anything int he buffer so we do not
-        # accidentally pick up old program complete responses
-        self._serial.reset_input_buffer()
-        while abs(time.time() - start) < timeout:
+        if not self._awaiting_completion:
+            raise RuntimeError("No VMX program is awaiting completion.")
+
+        deadline = time.monotonic() + timeout
+        response = bytearray()
+        while time.monotonic() < deadline:
             data = self._serial.read(1)
             # VMX returns ^ when program completes
-            if data.decode() == "^":
+            if data == b"^":
+                self._awaiting_completion = False
                 return
-        msg = "Waiting for program to complete timed out."
+            if data:
+                response.extend(data)
+            else:
+                time.sleep(0.005)
+        msg = (
+            "Waiting for program to complete timed out. "
+            f"VMX response: {bytes(response)!r}"
+        )
         raise TimeoutError(msg)
 
     def send(self) -> None:
@@ -389,8 +399,23 @@ class VMX:
         Note that sending commands just appends it to the current "program."
         The VMX chains calls itself unless cleared.
         Programs won't run until R is sent.
+
+        Raises:
+            RuntimeError: Raised when another program is awaiting completion.
         """
+        runs_program = "R" in self._cmd
+        emergency_stop = "D" in self._cmd or "K" in self._cmd
+        if self._awaiting_completion and not emergency_stop:
+            raise RuntimeError(
+                "Cannot send another command before waiting for program completion."
+            )
+
+        self._serial.reset_input_buffer()
         self._write(self._cmd)
+        if runs_program:
+            self._awaiting_completion = True
+        elif emergency_stop:
+            self._awaiting_completion = False
         # clear command que
         self._reset()
 

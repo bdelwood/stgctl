@@ -1,6 +1,5 @@
 """Command line interface for stgctl."""
 
-import json
 from typing import Annotated, Literal
 
 from cyclopts import App, Parameter
@@ -84,8 +83,7 @@ def run(
                 logger.info("Using simulated stage dimensions.")
             elif use_saved:
                 logger.info("Loading limit switch positions.")
-                with open("limit_switch_positions.json") as f:
-                    stg.limit_switch_positions = json.load(f)
+                stg.load_limit_switch_positions()
                 stg.home()
             else:
                 stg.startup()

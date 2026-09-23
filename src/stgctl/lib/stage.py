@@ -8,7 +8,7 @@ from loguru import logger
 
 from stgctl.core.settings import settings
 from stgctl.lib.signal import Signaller
-from stgctl.lib.vmx import VMX, Motor
+from stgctl.lib.vmx import VMX, Motor, SerialCommand
 from stgctl.schema.models import Size
 from stgctl.util.trajectory import (
     gen_2d_trajectory,
@@ -88,7 +88,10 @@ class XYStage:
         switch_values = [(True, False), (False, False), (False, True), (True, True)]
         for switch_value in switch_values:
             #  Go to -X, -Y limit switches then record position
-            self.VMX.clear().to_limit(motor=Motor.X, pos=switch_value[0]).to_limit(
+
+            self.VMX.clear().speed(motor=Motor.X, speed=settings.MAX_SPEED).speed(
+                motor=Motor.Y, speed=settings.MAX_SPEED
+            ).to_limit(motor=Motor.X, pos=switch_value[0]).to_limit(
                 motor=Motor.Y, pos=switch_value[1]
             ).run().send()
             # VMX.wait_for_complete can timeout
@@ -120,6 +123,13 @@ class XYStage:
                 json.dump(self.limit_switch_positions, f)
             logger.info(f"Saved limit switch positions to {save_path}")
 
+    def load_limit_switch_positions(self) -> None:
+        """Load limit switch positions from ``limit_switch_positions.json``."""
+        load_path = "limit_switch_positions.json"
+        with open(load_path) as f:
+            self.limit_switch_positions = json.load(f)
+        logger.info(f"Loaded limit switch positions from {load_path}")
+
     def home(self) -> None:
         """Run homing sequence.
 
@@ -127,8 +137,8 @@ class XYStage:
         """
         self._require_hardware()
         logger.info("Sending stages to positive limit switches.")
-        self.VMX.clear().speed(motor=Motor.X, speed=settings.HOME_SPEED).speed(
-            motor=Motor.Y, speed=settings.HOME_SPEED
+        self.VMX.clear().speed(motor=Motor.X, speed=settings.MAX_SPEED).speed(
+            motor=Motor.Y, speed=settings.MAX_SPEED
         ).to_limit(motor=Motor.X, pos=True).to_limit(
             motor=Motor.Y, pos=True
         ).run().send()
@@ -161,13 +171,14 @@ class XYStage:
             plot_trajectory(self._trajectory, title="Discrete raster trajectory")
             return
         # May want to fine-tune
-        raster_idx_speed = 1500
+        raster_idx_speed = settings.MAX_SPEED
 
         logger.debug(f"Setting motor speed to {raster_idx_speed} for both motors.")
 
         self.VMX.clear().speed(motor=Motor.X, speed=raster_idx_speed).speed(
             motor=Motor.Y, speed=raster_idx_speed
         ).run().send()
+        self.VMX.wait_for_complete(timeout=600)
 
         if signal:
             logger.info("Sending start signal.")
@@ -267,6 +278,7 @@ class XYStage:
         self.VMX.clear().speed(motor=Motor.X, speed=raster_idx_speed).speed(
             motor=Motor.Y, speed=raster_idx_speed
         ).run().send()
+        self.VMX.wait_for_complete(timeout=600)
 
         scan_rows = continuous_trajectory.reshape(len(rows), 2, 2)
         first_coord = scan_rows[0, 0]
@@ -323,10 +335,11 @@ class XYStage:
         self.home()
 
         # set motor speed
-        test_idx_speed = 1500
+        test_idx_speed = settings.MAX_SPEED
         self.VMX.clear().speed(motor=Motor.X, speed=test_idx_speed).speed(
             motor=Motor.Y, speed=test_idx_speed
         ).run().send()
+        self.VMX.wait_for_complete(timeout=600)
         logger.info(f"Set motor speed to {test_idx_speed} idx/s")
 
         # Signal start
@@ -369,6 +382,43 @@ class XYStage:
 
         # home again
         self.home()
+
+    def scotland_the_brave(self) -> None:
+        """Play Scotland the Brave using the X-axis motor."""
+        self._require_hardware()
+        commands = SerialCommand(
+            (
+                "C","S1M260","I1M260","I1M-195","I1M65","S1M325","I1M-162",
+                "S1M260","I1M130","S1M325","I1M-162","S1M390","I1M195",
+                "S1M520","I1M520","I1M-390","I1M130","I1M-260","S1M390",
+                "I1M195","S1M325","I1M-162","S1M260","I1M260","R",
+            )
+        )
+        self.VMX.command_queue = commands
+        self.VMX.send()
+        self.VMX.wait_for_complete(timeout=600)
+
+    def e1m1(self) -> None:
+        """Play the opening E1M1 guitar riff using the X-axis motor."""
+        self._require_hardware()
+        # E E E'  E E D'  E E C'  E E Bb  E E B C
+        # E E E'  E E D'  E E C'  E E Bb----
+        commands = SerialCommand(
+            (
+                "C","S1M325","I1M72","I1M-72","S1M650","I1M-143","S1M325",
+                "I1M72","I1M72","S1M587","I1M129","S1M325","I1M-72","I1M-72",
+                "S1M520","I1M114","S1M325","I1M-72","I1M-72","S1M463",
+                "I1M102","S1M325","I1M-72","I1M-72","S1M491","I1M108",
+                "S1M520","I1M114","S1M325","I1M-72","I1M-72","S1M650",
+                "I1M143","S1M325","I1M-72","I1M72","S1M587","I1M-129",
+                "S1M325","I1M72","I1M72","S1M520","I1M114","S1M325",
+                "I1M72","I1M72","S1M463","I1M-408","R",
+            )
+        )
+
+        self.VMX.command_queue = commands
+        self.VMX.send()
+        self.VMX.wait_for_complete(timeout=600)
 
     def gen_trajectory(self) -> None:
         """Generate grid raster trajectory."""
@@ -430,10 +480,16 @@ class XYStage:
             speed (int, optional): stage speed in idx/s
         """
         self._require_hardware()
-        # set motor speed
+        # set motor speed, enforcing the MAX_SPEED setting
+        if speed > settings.MAX_SPEED:
+            logger.info(
+                f"Requested speed {speed} exceeds MAX_SPEED {settings.MAX_SPEED}; speed will be capped to {settings.MAX_SPEED}"
+            )
+            speed = settings.MAX_SPEED
         self.VMX.clear().speed(motor=Motor.X, speed=speed).speed(
             motor=Motor.Y, speed=speed
         ).run().send()
+        self.VMX.wait_for_complete(timeout=600)
         logger.info(f"Set motor speed to {speed} idx/s")
 
         # Go to index
