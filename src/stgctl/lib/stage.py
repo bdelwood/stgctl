@@ -332,6 +332,13 @@ class XYStage:
         Useful for ensuring signalling behaves as expected.
         """
         self._require_hardware()
+
+        # Signal start
+        # normally this would happen after homing and motion, but we want test_signal_setup to fail early
+        logger.info("Sending start signal.")
+        msg = self.signaller.start_aq()
+        logger.info(f"Signal returned\n {msg.stdout}")
+
         self.home()
 
         # set motor speed
@@ -341,11 +348,6 @@ class XYStage:
         ).run().send()
         self.VMX.wait_for_complete(timeout=600)
         logger.info(f"Set motor speed to {test_idx_speed} idx/s")
-
-        # Signal start
-        logger.info("Sending start signal.")
-        msg = self.signaller.start_aq()
-        logger.info(f"Signal returned\n {msg.stdout}")
 
         # Move index -5000,-5000
         test_idx = -5000
